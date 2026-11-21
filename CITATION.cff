@@ -2,6 +2,7 @@ cff-version: 1.2.0
 message: "If you use this software, please cite it using the metadata below."
 title: "Donghyunpe (동현페): a browser laboratory that runs the 1999 Game Boy Color version of Prince of Persia as a program translated to JavaScript with a redrawn heroine, with the starting level, remaining time, health, brick colour and music set through the esoteric language Donghyun-lang"
 type: software
+doi: "10.5281/zenodo.24430550"
 version: "0.31"
 date-released: "2026-11-22"
 authors:

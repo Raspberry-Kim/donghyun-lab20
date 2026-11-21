@@ -1,9 +1,13 @@
 # 동현페 v0.31
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24430550.svg)](https://doi.org/10.5281/zenodo.24430550)
+
 술탄의 딸 **아몰랑**이 갑자기 심심해져서 모험을 나선다. **시작 층·남은 시간·체력 칸·벽돌색·음악**은 동현랭 코드로 정하고, 달리고 뛰고 매달리는 것은 키보드로 한다. 층은 열넷이다.
 동현 시리즈의 스물한 번째 작은 실험이다.
 
 바로 하기: https://raspberry-kim.github.io/donghyun-lab20/
+
+모든 판을 묶는 DOI는 [`10.5281/zenodo.24430550`](https://doi.org/10.5281/zenodo.24430550)이다. 이번 판은 [v0.31 릴리스](https://github.com/Raspberry-Kim/donghyun-lab20/releases/tag/v0.31)이며 Zenodo 보관본은 [records/24430551](https://zenodo.org/records/24430551)(DOI `10.5281/zenodo.24430551`)이다. 보관본에는 `pe/core.js`와 `pe/data.js`가 들어 있지 않다.
 
 ## 먼저 알아 둘 것
 
