@@ -1,0 +1,67 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it using the metadata below."
+title: "Donghyunpe (동현페): a browser laboratory that runs the 1999 Game Boy Color version of Prince of Persia as a program translated to JavaScript with a redrawn heroine, with the starting level, remaining time, health, brick colour and music set through the esoteric language Donghyun-lang"
+type: software
+version: "0.31"
+date-released: "2026-11-22"
+authors:
+  - family-names: Kim
+    given-names: Dong Hyun
+    orcid: "https://orcid.org/0000-0001-9883-0229"
+    affiliation: "Inha University College of Medicine"
+license: MIT
+repository-code: "https://github.com/Raspberry-Kim/donghyun-lab20"
+url: "https://raspberry-kim.github.io/donghyun-lab20/"
+abstract: >-
+  Donghyunpe is a browser-based, noncommercial toy in which Amolang, the
+  sultan's daughter, runs, jumps and climbs through fourteen levels. It
+  does not run a ROM file in an emulator: the 7,582 machine instructions
+  that the 1999 Game Boy Color version of Prince of Persia actually
+  executes were translated instruction by instruction into JavaScript,
+  and the screen, sound, input, timing and save layers were newly
+  written. A program written in the esoteric programming language
+  Donghyun-lang prints five integers that are read in order as the
+  starting level (1 to 14), remaining time in minutes (1 to 60), health
+  units (1 to 9), brick colour (dark pastel yellow or the original) and
+  music (off or on). The hero was replaced by 578 newly drawn frames of
+  Amolang that follow the positions and poses of the original frames,
+  with the original rule for hiding the character behind pillars. The
+  title screen, password entry and ending scenes are not included; the
+  shadow and the mirror image keep the original hero graphics. Input is
+  keyboard or gamepad, with on-screen buttons on phones; a desktop with a
+  keyboard is recommended. Version 0.31 renames the first heading of the
+  protocol tab to "code guide" and uses the Podong-i icon of Donghyun-lang
+  in the header and as the favicon; rules, engine and the save format are
+  unchanged from version 0.3.
+  Rights: the translated program in pe/core.js and the 228,169 bytes of
+  level, background, sound and table data in pe/data.js come from the
+  original game and belong to its rights holders. They are included
+  without permission and are NOT under the MIT license. The MIT license
+  applies only to the parts written for Donghyunpe (the page, the
+  protocol and examples, the Amolang graphics, the display and sound
+  layers and the game layer); the page fonts are under the SIL Open Font
+  License. The original ROM file, the notes on it and the tools that
+  translate it are not in this repository, so pe/core.js and pe/data.js
+  cannot be rebuilt from this archive alone. Prince of Persia is a
+  trademark of Ubisoft; this work is unaffiliated with Ubisoft, Jordan
+  Mechner, Red Orb Entertainment, Ed Magnin and Associates or Nintendo.
+  Tests are automated runs; the game was not played to the end by a
+  person and no real device was checked.
+keywords:
+  - platform game
+  - Prince of Persia
+  - Game Boy Color
+  - static recompilation
+  - esoteric programming language
+  - JavaScript
+references:
+  - type: software
+    title: "Donghyun-lang (동현랭): a Korean esoteric programming language with a browser playground"
+    authors:
+      - family-names: Kim
+        given-names: Dong Hyun
+        orcid: "https://orcid.org/0000-0001-9883-0229"
+        affiliation: "Inha University College of Medicine"
+    version: "1.57"
+    license: MIT
+    repository-code: "https://github.com/Raspberry-Kim/donghyun-lang"
