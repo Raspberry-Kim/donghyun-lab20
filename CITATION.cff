@@ -35,14 +35,17 @@ abstract: >-
   unchanged from version 0.3.
   Rights: the translated program in pe/core.js and the 228,169 bytes of
   level, background, sound and table data in pe/data.js come from the
-  original game and belong to its rights holders. They are included
-  without permission and are NOT under the MIT license. The MIT license
+  original game and belong to its rights holders. They are in the
+  repository and on the page without permission, are NOT under the MIT
+  license, and are left out of the release bundles and of this archive
+  (.gitattributes export-ignore), so this archive alone does not run the
+  game or the engine tests. The MIT license
   applies only to the parts written for Donghyunpe (the page, the
   protocol and examples, the Amolang graphics, the display and sound
   layers and the game layer); the page fonts are under the SIL Open Font
   License. The original ROM file, the notes on it and the tools that
   translate it are not in this repository, so pe/core.js and pe/data.js
-  cannot be rebuilt from this archive alone. Prince of Persia is a
+  cannot be rebuilt from the repository either. Prince of Persia is a
   trademark of Ubisoft; this work is unaffiliated with Ubisoft, Jordan
   Mechner, Red Orb Entertainment, Ed Magnin and Associates or Nintendo.
   Tests are automated runs; the game was not played to the end by a
