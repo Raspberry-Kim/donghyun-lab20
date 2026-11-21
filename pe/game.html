@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>동현페 게임 화면</title>
+<style>
+:root{--bg:#0b0a08;--panel:#211d16;--line:#3d3526;--ink:#efe6d0;--mute:#a59a80;--brick:#988547;--brick-d:#5c5029;--skirt:#7b8ac6;--top:#fcd8fc}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:15px/1.55 "Pretendard","Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",system-ui,sans-serif;overflow:hidden}
+body{display:grid;grid-template:"s" minmax(0,1fr) "p" auto/minmax(0,1fr)}
+#stage{grid-area:s;position:relative;min-width:0;min-height:0;background:#000}
+#screen{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges;display:block;object-fit:contain;outline:0}
+#card{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:5%;text-align:center;overflow:auto;
+  background:repeating-linear-gradient(0deg,transparent 0 30px,rgba(0,0,0,.28) 30px 32px),repeating-linear-gradient(90deg,var(--brick) 0 62px,var(--brick-d) 62px 64px)}
+#card[hidden],#veil[hidden],#toast[hidden]{display:none}
+#card .box{background:rgba(21,19,15,.92);border:2px solid var(--line);border-radius:8px;padding:18px 20px;max-width:520px;width:100%}
+#card h2{margin:0 0 6px;font-size:22px;letter-spacing:-.02em}
+#card p{margin:6px 0}
+#card p.story{color:var(--top);font-size:16px;word-break:keep-all}
+#card p.small{font-size:12.5px;color:var(--mute);word-break:keep-all}
+#card .acts{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:12px}
+button{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:7px 12px;cursor:pointer;min-height:36px}
+button:focus-visible{outline:2px solid var(--skirt);outline-offset:2px}
+button.primary{background:var(--skirt);color:#14162a;border-color:var(--skirt);font-weight:700}
+button[hidden]{display:none}
+button[aria-pressed="true"]{background:var(--brick-d);border-color:var(--brick)}
+#veil{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(10,9,7,.62);font-size:18px;font-weight:700;letter-spacing:.02em;text-align:center;padding:0 12px;word-break:keep-all}
+#toast{position:absolute;left:50%;top:10px;transform:translateX(-50%);max-width:92%;background:rgba(21,19,15,.9);border:1px solid var(--brick);border-radius:99px;padding:4px 14px;font-size:13.5px;text-align:center;pointer-events:none;word-break:keep-all}
+#pad{grid-area:p;display:none;padding:10px 14px calc(10px + env(safe-area-inset-bottom));justify-content:space-between;align-items:center;gap:10px;user-select:none;-webkit-user-select:none;touch-action:none;background:#141210}
+#pad .d{display:grid;grid-template-columns:repeat(3,50px);grid-template-rows:repeat(3,50px);gap:3px}
+#pad button{min-width:50px;min-height:50px;font-weight:700;touch-action:none;padding:0}
+#pad .mid{display:flex;flex-direction:column;gap:6px}
+#pad .mid button{min-width:58px;min-height:34px;font-size:12.5px;font-weight:600}
+#pad .round{border-radius:50%;width:60px;height:60px}
+#pad .ab{display:grid;grid-template-columns:60px 60px;gap:8px 10px;justify-items:center}
+html.touch #pad{display:flex}
+@media (orientation:landscape){
+  html.touch body{grid-template:"d s a" minmax(0,1fr) "m s a" auto/auto minmax(0,1fr) auto}
+  html.touch #pad{display:contents}
+  html.touch #pad .d{grid-area:d;align-self:end;margin:8px 8px 4px calc(8px + env(safe-area-inset-left))}
+  html.touch #pad .mid{grid-area:m;flex-direction:row;justify-content:center;margin:4px 8px calc(8px + env(safe-area-inset-bottom))}
+  html.touch #pad .ab{grid-area:a;grid-row:1/3;align-self:center;margin:8px calc(8px + env(safe-area-inset-right)) 8px 8px}
+}
+@media (max-width:380px) and (orientation:portrait){#pad{padding:8px 8px calc(8px + env(safe-area-inset-bottom));gap:6px}#pad .d{grid-template-columns:repeat(3,42px);grid-template-rows:repeat(3,42px)}#pad button{min-width:42px;min-height:42px}#pad .mid button{min-width:50px;min-height:32px;font-size:12px}#pad .round{width:52px;height:52px}#pad .ab{grid-template-columns:52px 52px;gap:6px}}
+@media (max-width:420px){#card .box{padding:12px 12px}#card h2{font-size:19px}#card p.story{font-size:14.5px}#card p.small{font-size:12px}}
+</style>
+<script>
+/* 화면 버튼은 손가락으로 쓰는 기기에서만 보인다. 틀(iframe) 안에서는 매체 질의가 듣지 않는 브라우저가 있어 바깥 페이지의 판정도 본다. */
+(function(){var t=false;try{t=matchMedia('(pointer:coarse)').matches||(navigator.maxTouchPoints>0&&!matchMedia('(any-pointer:fine)').matches);if(!t&&parent!==window)t=parent.document.documentElement.classList.contains('touch-only');}catch(e){}
+if(t)document.documentElement.classList.add('touch');addEventListener('touchstart',function(){document.documentElement.classList.add('touch');},{once:true,passive:true});})();
+</script>
+</head>
+<body>
+<div id="stage">
+  <canvas id="screen" width="320" height="288" tabindex="0" aria-label="게임 화면"></canvas>
+  <div id="toast" role="status" hidden></div>
+  <div id="veil" hidden>일시 정지 · P를 다시 누르면 계속</div>
+  <div id="card">
+    <div class="box">
+      <h2 id="cTitle">아몰랑의 모험</h2>
+      <p class="story" id="cStory">술탄의 딸 아몰랑은 갑자기 심심해졌다.<br>모험이라도 할까 하고, 지하 감옥으로 내려간다.</p>
+      <p class="small" id="cNote">불러오는 중…</p>
+      <div class="acts">
+        <button class="primary" id="bNew" hidden>같은 설정으로 다시</button>
+        <button id="bCont" hidden></button>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="pad" aria-label="터치 조작">
+  <div class="d">
+    <span></span><button data-k="up" aria-label="위">↑</button><span></span>
+    <button data-k="left" aria-label="왼쪽">←</button><span></span><button data-k="right" aria-label="오른쪽">→</button>
+    <span></span><button data-k="down" aria-label="아래">↓</button><span></span>
+  </div>
+  <div class="mid"><button data-k="start">Start</button><button id="bPause" aria-pressed="false">정지</button><button id="bMute" aria-pressed="false">소리</button></div>
+  <div class="ab"><button class="round" data-k="B">B</button><button class="round" data-k="A">A</button></div>
+</div>
+<script src="./atlas.js"></script>
+<script src="./data.js"></script>
+<script src="./core.js"></script>
+<script src="./apu.js"></script>
+<script src="./game.js"></script>
+<script src="./gamepad.js"></script>
+<script>
+/* 동현페 게임 화면. 바깥 실험실 페이지가 #l=층&t=분&h=체력 칸&b=벽돌색&m=음악[&c=1 이어하기]로 띄운다. 따로 열면 기본값으로 시작한다. */
+(function () {
+  'use strict';
+  const $ = (s) => document.querySelector(s);
+  const FPS = 4194304 / 70224, SAVE_KEY = 'donghyunpe.save.v1', BEST_KEY = 'donghyunpe.best.v1', LAST_LEVEL = 14;
+  const cv = $('#screen'), ctx = cv.getContext('2d'), img = ctx.createImageData(320, 288);
+  let game = null, apu = null, actx = null, gain = null, audioAt = 0, bufL = null, bufR = null;
+  let running = false, paused = false, muted = false, last = 0, acc = 0, shown = 0, deadFor = 0, toastT = 0, soundSaid = '';
+  const S = window.__pe = { ready: false, frames: 0, error: null, events: [], audio: { frames: 0, peak: 0 }, get game() { return game; }, get running() { return running; }, get paused() { return paused; } };
+  const post = (state, detail) => { try { if (parent !== window) parent.postMessage({ type: 'dh-pe', state, detail }, '*'); } catch (e) {} };
+
+  /* ---- 바깥에서 받은 설정 ---- */
+  const arg = {}; for (const kv of location.hash.slice(1).split('&')) { const [k, v] = kv.split('='); if (k) arg[k] = parseInt(v, 10); }
+  const num = (k, lo, hi, def) => Number.isInteger(arg[k]) && arg[k] >= lo && arg[k] <= hi ? arg[k] : def;
+  const SET = S.set = { level: num('l', 1, LAST_LEVEL, 1), min: num('t', 1, 60, 60), hp: num('h', 1, 9, 3), brick: num('b', 0, 1, 0), music: num('m', 0, 1, 0), cont: num('c', 0, 1, 0) };
+
+  /* ---- 저장(이 브라우저 안): 막혀 있으면 이 창이 열려 있는 동안만 기억한다 ---- */
+  const mem = {}; let storeOk = true;
+  const store = {
+    get(k) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch (e) { storeOk = false; return mem[k] || null; } },
+    set(k, v) { mem[k] = v; try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { storeOk = false; } },
+    del(k) { delete mem[k]; try { localStorage.removeItem(k); } catch (e) { storeOk = false; } },
+  };
+  const validSave = (s) => s && s.level >= 1 && s.level <= LAST_LEVEL && s.min >= 1 && s.min <= 60 && s.hp >= 1 && s.hp <= 9 ? s : null;
+  const firstSave = () => ({ level: SET.level, min: SET.min, sec: 0, hp: SET.hp });
+
+  /* ---- 자료 ---- */
+  function b64bytes(s) { const b = atob(s), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u; }
+  function unpackData(d) { const out = new Uint8Array(d.size), p = b64bytes(d.b64); let o = 0; for (let i = 0; i < d.runs.length; i += 2) { out.set(p.subarray(o, o + d.runs[i + 1]), d.runs[i]); o += d.runs[i + 1]; } return out; }
+  async function loadAtlas() {
+    const A = window.__PE_ATLAS, im = new Image(); im.src = A.png; await im.decode();
+    const c = document.createElement('canvas'); c.width = im.naturalWidth; c.height = im.naturalHeight;
+    const x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(im, 0, 0);
+    return { rgba: x.getImageData(0, 0, c.width, c.height).data, w: c.width, h: c.height, frames: A.meta.frames };
+  }
+
+  /* ---- 소리 ---- */
+  /* 소리 장치는 처음부터 만들어 둔다(엔진이 초기화 때 쓰는 음량·좌우 설정을 놓치지 않으려고). 실제 출력은 사용자 동작 뒤에 켜진다 */
+  function audioMake() {
+    try { actx = new (window.AudioContext || window.webkitAudioContext)(); gain = actx.createGain(); gain.gain.value = 0.9; gain.connect(actx.destination); actx.onstatechange = soundSay; } catch (e) { actx = null; }
+    apu = window.DonghyunPeApu.makeApu(actx ? actx.sampleRate : 48000); bufL = new Float32Array(4096); bufR = new Float32Array(4096);
+  }
+  function soundSay() { const now = !actx ? 'none' : actx.state === 'running' ? (muted ? 'mute' : 'on') : 'off'; if (now !== soundSaid) { soundSaid = now; post('sound', now); } }
+  function audioOn() { if (actx && actx.state === 'suspended') actx.resume().then(soundSay, () => {}); }
+  function pushAudio() {
+    if (!apu) return;
+    const n = apu.render(game.core.cyc, bufL, bufR); if (!n) return;
+    S.audio.frames += n; for (let i = 0; i < n; i += 16) { const v = Math.abs(bufL[i]); if (v > S.audio.peak) S.audio.peak = v; }
+    if (!actx || actx.state !== 'running') return;
+    const now = actx.currentTime;
+    if (audioAt < now + 0.01) audioAt = now + 0.06;          // 끊겼으면 조금 뒤에서 다시 잇는다
+    if (audioAt - now > 0.3) return;                         // 너무 앞서 있으면 이번 조각은 버린다
+    const b = actx.createBuffer(2, n, actx.sampleRate); b.getChannelData(0).set(bufL.subarray(0, n)); b.getChannelData(1).set(bufR.subarray(0, n));
+    const s = actx.createBufferSource(); s.buffer = b; s.connect(gain); s.start(audioAt); audioAt += n / actx.sampleRate;
+  }
+
+  /* ---- 카드·알림 ---- */
+  function card(title, story, note, newLabel) {
+    running = false; $('#veil').hidden = true;
+    $('#cTitle').textContent = title; $('#cStory').innerHTML = story; $('#cNote').textContent = note;
+    const sv = validSave(store.get(SAVE_KEY)), bn = $('#bNew'), bc = $('#bCont');
+    bn.hidden = !S.ready; bn.textContent = newLabel || '같은 설정으로 다시';
+    if (sv && S.ready) { bc.hidden = false; bc.textContent = `이어하기 · ${sv.level}층 · ${sv.min}분 남음`; bc.className = 'primary'; bn.className = ''; }
+    else { bc.hidden = true; bn.className = 'primary'; }
+    $('#card').hidden = false; if (S.ready) (sv ? bc : bn).focus({ preventScroll: true });
+  }
+  function toast(t, ms) { const e = $('#toast'); e.textContent = t; e.hidden = false; clearTimeout(toastT); if (ms) toastT = setTimeout(() => { e.hidden = true; }, ms); }
+  function onEvent(type, info) {
+    S.events.push([type, info]);
+    if (!S.ready) return;
+    if (type === 'level') {
+      if (info.cleared >= LAST_LEVEL) return;                  // 마지막 층 뒤에는 끝 카드가 온다
+      store.set(SAVE_KEY, info.save); post('save', info.save);
+      toast(`${info.cleared}층 통과 · ${info.save.level}층` + (storeOk ? '부터 이어 할 수 있게 저장했다' : '으로 간다'), 3600);
+    } else if (type === 'ending') {
+      const best = store.get(BEST_KEY), left = info.min; store.del(SAVE_KEY); post('save', null);
+      if (!best || left > best.min) store.set(BEST_KEY, { min: left });
+      post('ending', { min: left });
+      card('모험 끝', `아몰랑은 탑 꼭대기까지 올라갔다. <span style="white-space:nowrap">남은 시간 ${left}분.</span><br>그리고 다시 심심해졌다.`, best && best.min >= left ? `지금까지 가장 많이 남긴 시간은 ${best.min}분이다.` : '지금까지 가장 많이 남긴 시간이다.', '한 번 더');
+    } else if (type === 'timeover') {
+      post('timeover');
+      card('시간이 다 됐다', '시간이 다 지났다.<br>아몰랑은 저녁을 먹으러 돌아갔다.', '저장한 층이 있으면 그 층에 들어섰을 때의 남은 시간으로 이어 할 수 있다.');
+    } else if (type === 'title') card('아몰랑의 모험', '술탄의 딸 아몰랑은 갑자기 심심해졌다.<br>모험이라도 할까 하고, 지하 감옥으로 내려간다.', '코드로 정한 층·시간·체력 칸으로 다시 시작할 수 있다.');
+  }
+  function begin(save) {
+    audioOn();
+    try { game.start(save || firstSave()); } catch (e) { fail(e); return; }
+    if (apu) apu.sync(game.core.cyc);
+    for (const k of PADKEYS) { delete late[k]; game.key(k, false); }
+    $('#card').hidden = true; $('#toast').hidden = true; paused = false; $('#bPause').setAttribute('aria-pressed', 'false'); $('#veil').hidden = true;
+    running = true; deadFor = 0; acc = 0; last = performance.now(); cv.focus({ preventScroll: true }); post('started', game.snapshot());
+  }
+  function fail(e) { S.error = String(e && e.message || e); running = false; $('#card').hidden = false; $('#cTitle').textContent = '시작하지 못했다'; $('#cStory').textContent = S.error; $('#cNote').textContent = ''; $('#bNew').hidden = true; $('#bCont').hidden = true; post('error', S.error); }
+
+  /* ---- 진행 ---- */
+  function step() {
+    if (!game.frame()) { running = false; return false; }
+    S.frames++; pushAudio();
+    for (const k in late) if (S.frames - downAt[k] >= HOLD) { delete late[k]; game.key(k, false); }
+    if (game.dead()) { if (++deadFor === 90) toast('Enter(Start)를 누르면 이 층을 다시 시작한다', 0); }
+    else if (deadFor) { if (deadFor >= 90) $('#toast').hidden = true; deadFor = 0; }
+    return true;
+  }
+  function loop(t) {
+    requestAnimationFrame(loop);
+    if (!running || paused) { last = t; return; }
+    acc += Math.min(100, t - last); last = t; let n = 0; const ms = 1000 / FPS;
+    try { while (acc >= ms && n < 4 && running) { if (!step()) break; acc -= ms; n++; } } catch (e) { fail(e); return; }
+    if (n) { img.data.set(game.out); ctx.putImageData(img, 0, 0); if (++shown % 30 === 0) status(); }
+  }
+  function status() { const s = game.snapshot(); if (s.level >= 1 && s.level <= LAST_LEVEL) post('stat', s); }
+  S.step = (n) => { for (let i = 0; i < (n || 1); i++) if (!step()) break; img.data.set(game.out); ctx.putImageData(img, 0, 0); status(); };
+  S.begin = begin;
+
+  /* ---- 입력 ---- */
+  const KEY = { ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'up', ArrowDown: 'down', KeyX: 'A', KeyZ: 'B', Enter: 'start', ShiftRight: 'select', Backspace: 'select' };
+  const PADKEYS = ['left', 'right', 'up', 'down', 'A', 'B', 'start', 'select'];
+  /* 아주 짧게 누른 버튼도 게임이 읽을 수 있게, 뗀 것을 눌린 뒤 HOLD 화면이 지난 다음에 전한다 */
+  const HOLD = 6, downAt = {}, late = {};
+  function press(k) { if (late[k]) delete late[k]; else downAt[k] = S.frames; game.key(k, true); }
+  function release(k) { if (running && !paused && S.frames - (downAt[k] || 0) < HOLD) late[k] = 1; else { delete late[k]; game.key(k, false); } }
+  function pause(v) { if (!running) return; paused = v === undefined ? !paused : v; $('#bPause').setAttribute('aria-pressed', paused); $('#veil').hidden = !paused; post('pause', paused); if (!paused) cv.focus({ preventScroll: true }); }
+  function mute() { muted = !muted; $('#bMute').setAttribute('aria-pressed', muted); if (gain) gain.gain.value = muted ? 0 : 0.9; soundSay(); }
+  addEventListener('keydown', (e) => {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    audioOn();
+    const k = KEY[e.code];
+    if (k && running) { if (!e.repeat) press(k); e.preventDefault(); return; }
+    if (e.repeat) return;
+    if (e.code === 'KeyP') pause(); else if (e.code === 'KeyM') mute();
+  });
+  addEventListener('keyup', (e) => { const k = KEY[e.code]; if (k && game) { release(k); if (running) e.preventDefault(); } });
+  addEventListener('pointerdown', audioOn, true);
+  addEventListener('blur', () => { if (game) for (const k of PADKEYS) { delete late[k]; game.key(k, false); } post('blur'); });
+  addEventListener('focus', () => post('focus'));
+  addEventListener('message', (e) => { if (e.data && e.data.type === 'dh-wake') audioOn(); });
+  for (const b of document.querySelectorAll('#pad button[data-k]')) {
+    const k = b.dataset.k, on = (v) => (e) => { e.preventDefault(); if (game && (running || !v)) { if (v) press(k); else release(k); } };
+    b.addEventListener('pointerdown', on(true)); b.addEventListener('pointerup', on(false)); b.addEventListener('pointercancel', on(false)); b.addEventListener('pointerleave', on(false));
+    b.addEventListener('contextmenu', (e) => e.preventDefault());
+  }
+  $('#bPause').addEventListener('click', (e) => { pause(); e.currentTarget.blur(); });
+  $('#bMute').addEventListener('click', (e) => { mute(); e.currentTarget.blur(); });
+  $('#bNew').addEventListener('click', () => begin(null));
+  $('#bCont').addEventListener('click', () => begin(validSave(store.get(SAVE_KEY))));
+  /* 게임패드(시리즈 공통): 오른쪽 버튼 A = X키 자리, 아래 버튼 B = Z키 자리, + = Start */
+  const GPK = { x: 'A', z: 'B', enter: 'start', shift: 'select', up: 'up', down: 'down', left: 'left', right: 'right' };
+  if (window.GP) window.GP.start({ down(k) { if (GPK[k] && game && running) press(GPK[k]); }, up(k) { if (GPK[k] && game) release(GPK[k]); }, status(t) { post('pad', t); }, hint: '십자키·왼 스틱 이동 · + Start' });
+
+  /* ---- 시작 ---- */
+  (async function init() {
+    try {
+      const atlas = await loadAtlas(), data = unpackData(window.__PE_DATA); audioMake();
+      game = window.DonghyunPe.makeGame(window.DonghyunPeCore.makeCore, data, atlas, { music: !!SET.music, onEvent, onIo: (a, v, t) => { if (apu) apu.io(a, v, t); } });
+      game.setBrick(!SET.brick);
+      S.ready = true; requestAnimationFrame(loop);
+      begin(SET.cont ? validSave(store.get(SAVE_KEY)) : null); soundSay();
+    } catch (e) { fail(e); }
+  })();
+})();
+</script>
+</body>
+</html>
