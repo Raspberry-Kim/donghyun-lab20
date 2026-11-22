@@ -51,16 +51,18 @@ function makeCore(rom, opts) {
   const fb = new Uint32Array(SW * SH), base = new Uint32Array(SW * SH), over = new Uint32Array(SW * SH), heroPx = new Uint32Array(SW * SH), fgm = new Uint8Array(SW * SH), actPx = new Uint32Array(SW * SH), heroIx = new Uint8Array(SW * SH), actIx = new Uint8Array(SW * SH), bgi = new Uint8Array(SW * SH);
   let recolor = opts.recolor || null, limit10 = !!opts.limit10;
   function rgb(lo, hi) { const c = lo | (hi << 8); return (0xFF000000 | (((c >> 10) & 31) << 19) | (((c >> 5) & 31) << 11) | ((c & 31) << 3)) >>> 0; }
-  /* recolor(v, k): 배경색 바꾸기(k는 0–31 색 번호). recolor.theme가 있으면 주제색(팔레트 0·1)이 바뀔 때 전체를 다시 계산한다 */
+  /* 색 바꾸기. recolor.pal(raw, out, k0, obj)이 팔레트 하나(네 색, k0부터)의 보이는 색을 정한다. obj가 1이면 스프라이트 팔레트다.
+     recolor.theme(bgRaw)가 있으면 주제색(배경 팔레트 0·1)이 바뀔 때 전체를 다시 계산한다. recolor가 없으면 본래 색 그대로다 */
+  function paintBg(k) { if (recolor) recolor.pal(bgRaw, bgRGB, k & ~3, 0); else bgRGB[k] = bgRaw[k]; }
+  function paintObj(k) { if (recolor) recolor.pal(objRaw, objRGB, k & ~3, 1); else objRGB[k] = objRaw[k]; }
+  function repaint() { for (let j = 0; j < 32; j += 4) { paintBg(j); paintObj(j); } if (!recolor) for (let j = 0; j < 32; j++) { bgRGB[j] = bgRaw[j]; objRGB[j] = objRaw[j]; } }
   function setBg(i) {
-    const k = i >> 1, v = rgb(bgpal[k * 2], bgpal[k * 2 + 1]); bgRaw[k] = v;
-    if (recolor && recolor.theme && k < 8 && recolor.theme(bgRaw)) { for (let j = 0; j < 32; j++) bgRGB[j] = recolor(bgRaw[j], j); reObj(); return; }
-    bgRGB[k] = recolor ? recolor(v, k) : v;
+    const k = i >> 1; bgRaw[k] = rgb(bgpal[k * 2], bgpal[k * 2 + 1]);
+    if (recolor && recolor.theme && k < 8 && recolor.theme(bgRaw)) { repaint(); return; }
+    paintBg(k);
   }
-  /* 스프라이트 팔레트 6은 궁전 층에서 바닥 조각(주제색)에 쓰이므로 배경과 같은 색 바꾸기를 거친다 */
-  function setObj(i) { const k = i >> 1, v = rgb(objpal[k * 2], objpal[k * 2 + 1]); objRaw[k] = v; objRGB[k] = recolor && (k >> 2) === 6 ? recolor(v, -1) : v; }
-  function reObj() { for (let j = 24; j < 28; j++) objRGB[j] = recolor ? recolor(objRaw[j], -1) : objRaw[j]; }
-  function setRecolor(f) { recolor = f; if (f && f.theme) f.theme(bgRaw); for (let j = 0; j < 32; j++) bgRGB[j] = f ? f(bgRaw[j], j) : bgRaw[j]; reObj(); }
+  function setObj(i) { const k = i >> 1; objRaw[k] = rgb(objpal[k * 2], objpal[k * 2 + 1]); paintObj(k); }
+  function setRecolor(f) { recolor = f; if (f && f.theme) f.theme(bgRaw); repaint(); }
 
   const lnBg = new Uint8Array(SW), lnU = new Uint32Array(SW), lnH = new Uint32Array(SW), lnO = new Uint32Array(SW), lnA = new Uint32Array(SW), lnUb = new Uint8Array(SW), lnHb = new Uint8Array(SW), lnOb = new Uint8Array(SW), lnAb = new Uint8Array(SW), lnHi = new Uint8Array(SW), lnAi = new Uint8Array(SW);
   function renderLine(y) {
@@ -279,7 +281,7 @@ function makeCore(rom, opts) {
     reg() { return { A, B, C, D, E, H, L, SP, fz, fn, fh, fc, pc, ime, halted, bank, ly, lcdOn }; },
     setReg(r) { if ('A' in r) A = r.A; if ('B' in r) B = r.B; if ('C' in r) C = r.C; if ('D' in r) D = r.D; if ('E' in r) E = r.E; if ('H' in r) H = r.H; if ('L' in r) L = r.L; if ('SP' in r) SP = r.SP; if ('ime' in r) ime = r.ime; },
     call(addr) { push(pc); pc = addr; },
-    bgRaw, bgRGB, objRGB, SW, SH,
+    bgRaw, bgRGB, objRaw, objRGB, SW, SH,
   };
 }
 const api = { makeCore };

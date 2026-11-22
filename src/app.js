@@ -1,4 +1,4 @@
-/* 동현페: 동현랭으로 시작 층·남은 시간·체력 칸·벽돌색·음악을 정하고, 아몰랑의 모험을 띄운다. */
+/* 동현페: 동현랭으로 시작 층·남은 시간·체력 칸·색상·음악을 정하고, 아몰랑의 모험을 띄운다. */
 (function(){
 const $=s=>document.querySelector(s);
 
@@ -44,7 +44,7 @@ code.addEventListener('beforeinput',e=>{
 code.oninput=codeChanged;
 code.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key==='Enter'){e.preventDefault();start();}});
 function selectExample(){const ex=examples.find(e=>e.id===$('#example').value);code.value=ex.code;$('#example-note').textContent=ex.note;codeChanged();}
-$('#example').onchange=selectExample; selectExample();
+$('#example').onchange=()=>{ selectExample(); previewCard(); }; selectExample();
 $('#save').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([code.value+'\n'],{type:'text/plain;charset=utf-8'}));a.download='pe.dh';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);};
 $('#open').onchange=async e=>{const f=e.target.files[0];if(!f)return;code.value=(await f.text()).replace(/\r/g,'').replace(/\n$/,'');codeChanged();e.target.value='';};
 $('#run').onclick=()=>start();
@@ -55,28 +55,28 @@ const FIELDS=[
   {key:'l',name:'시작 층',min:1,max:LAST,def:1},
   {key:'t',name:'남은 시간(분)',min:1,max:60,def:60},
   {key:'h',name:'체력 칸',min:1,max:9,def:3},
-  {key:'b',name:'벽돌색',min:0,max:1,def:0},
+  {key:'b',name:'색상',min:0,max:2,def:0},
   {key:'m',name:'음악',min:0,max:1,def:1}
 ];
 const DEF=Object.fromEntries(FIELDS.map(f=>[f.key,f.def]));
 function parseSortie(out){
   const tok=out.split(/\s+/).filter(Boolean).map(Number);
   if(!tok.length) return {set:{...DEF},note:'출력이 없어 기본값 1 60 3 0 1로 나선다.'};
-  if(tok.length!==FIELDS.length) return {err:`정수를 ${tok.length}개 출력했다. 시작 층 · 남은 시간 · 체력 칸 · 벽돌색 · 음악, 다섯 개를 차례로 출력하자.`};
+  if(tok.length!==FIELDS.length) return {err:`정수를 ${tok.length}개 출력했다. 시작 층 · 남은 시간 · 체력 칸 · 색상 · 음악, 다섯 개를 차례로 출력하자.`};
   const set={};
   for(let i=0;i<FIELDS.length;i++){const f=FIELDS[i],v=tok[i];
     if(!Number.isInteger(v)||v<f.min||v>f.max) return {err:`${i+1}번째 값 ${f.name} ${v}은 쓸 수 없다. ${f.min}부터 ${f.max}까지만 된다.`};
     set[f.key]=v;}
   return {set};
 }
-const brickName=v=>v?'본래 색':'노랑', musicName=v=>v?'켬':'끔';
+const colorName=v=>['그레이스케일','컬러','본래 색'][v]||'그레이스케일', musicName=v=>v?'켬':'끔';
 const SAVE_KEY='donghyunpe.save.v1';
 function readSave(){ try{ const s=JSON.parse(localStorage.getItem(SAVE_KEY)||'null'); return s&&s.level>=1&&s.level<=LAST&&s.min>=1&&s.min<=60&&s.hp>=1&&s.hp<=9?s:null; }catch(e){ return null; } }
 function setCard(s){
-  $('#set-card').innerHTML=[['시작 층',s.l+'층'],['남은 시간',s.t+'분'],['체력 칸',s.h+'칸'],['벽돌색',brickName(s.b)],['음악',musicName(s.m)]]
+  $('#set-card').innerHTML=[['시작 층',s.l+'층'],['남은 시간',s.t+'분'],['체력 칸',s.h+'칸'],['색상',colorName(s.b)],['음악',musicName(s.m)]]
     .map(([a,b])=>`<div><span>${a}</span><strong title="${String(b).replace(/"/g,'&quot;')}">${b}</strong></div>`).join('');
   $('#stamp-map').innerHTML=`${s.l}층 <span>시작 층</span>`;$('#stamp-skill').innerHTML=`${s.t}분 <span>남은 시간</span>`;
-  $('#poster-map').textContent=`${s.l}층 · ${s.t}분 · 체력 ${s.h}칸`;
+  $('#poster-map').textContent=`${s.l}층 · ${s.t}분 · 체력 ${s.h}칸`; $('#screen').dataset.color=s.b;
 }
 function contButton(){ const sv=readSave(), b=$('#poster-cont'); b.hidden=!sv; if(sv) b.textContent=`이어하기 · ${sv.level}층 · ${sv.min}분 남음`; }
 const result=(t,kind)=>{const r=$('#result');r.textContent=t;r.dataset.kind=kind||'';};
@@ -126,7 +126,7 @@ addEventListener('message',e=>{
   if(d.state==='started'){ live=true; statLine(d.detail); }
   else if(d.state==='stat') statLine(d.detail);
   else if(d.state==='need-load') cmd('load-data',{data:bundle?bundle.data:''});
-  else if(d.state==='loaded'){ live=true; statLine(d.detail); const u=(bundle&&bundle.summary)||{}; toast(`저장한 판을 불러왔다 · ${[u.title,u.date].filter(Boolean).join(' · ')}. 벽돌색과 음악도 저장할 때 그대로이고, 편집기의 코드는 바뀌지 않는다.`,'ok'); }
+  else if(d.state==='loaded'){ live=true; statLine(d.detail); const u=(bundle&&bundle.summary)||{}; toast(`저장한 판을 불러왔다 · ${[u.title,u.date].filter(Boolean).join(' · ')}. 색상과 음악도 저장할 때 그대로이고, 편집기의 코드는 바뀌지 않는다.`,'ok'); }
   else if(d.state==='loadfail'){ live=false; toast('불러오기 실패: 저장한 판을 게임이 읽지 못했다. 다른 판에서 만든 파일일 수 있다.','error'); }
   else if(d.state==='snap'){ if(snapWait) snapWait(d.detail); }
   else if(d.state==='focus') setFocus(true);
@@ -183,7 +183,13 @@ const clip=(v,n=40)=>String(v??'').slice(0,n);
 const eul=n=>(n===2?'를':'을');                // 칸 1을 · 칸 2를 · 칸 3을
 const valid=d=>!!d&&typeof d==='object'&&d.format===SAVE.format&&typeof d.data==='string'&&d.data.length>1000&&d.data.length<4e5;
 /* 저장할 때의 설정. 범위를 벗어난 값이 섞여 있으면 기본값으로 바꾼다 */
-const setOf=d=>{ const o={}, s=(d&&d.set)||{}; for(const f of FIELDS){ const v=s[f.key]; o[f.key]=Number.isInteger(v)&&v>=f.min&&v<=f.max?v:f.def; } return o; };
+/* v0.40부터 넷째 값이 벽돌색(0 노랑 · 1 본래 색)에서 색상(0 그레이스케일 · 1 컬러 · 2 본래 색)으로 바뀌었다.
+   그 전 판에서 저장한 묶음은 노랑을 컬러로, 본래 색을 본래 색으로 옮겨 읽는다 */
+const oldSave=d=>{ const v=parseFloat(d&&d.lab); return v>0&&v<0.4; };
+const setOf=d=>{ const o={}, s=(d&&d.set)||{}; for(const f of FIELDS){ const v=s[f.key]; o[f.key]=Number.isInteger(v)&&v>=f.min&&v<=f.max?v:f.def; }
+  if(oldSave(d)) o.b=s.b===1?2:1; return o; };
+/* 옛 묶음의 요약 글도 지금 말로 바꿔 보인다 */
+const lineOf=d=>{ const t=(d&&d.summary&&d.summary.line)||''; return oldSave(d)?t.replace('벽돌색 노랑','색상 컬러').replace('벽돌색 본래 색','색상 본래 색'):t; };
 /* 결과 알림: 상태 줄과 코드 아래 글에 적고, 전체 화면에서는 화면 위쪽에 4초 동안 띄운다 */
 function toast(text,kind){ if(kind==='error') status(text,'error'); result(text,kind==='error'?'error':''); const n=$('#fs-note'); clearTimeout(noteTimer);
   if(isFull()){ $('#full-hint').hidden=true; n.textContent=text; n.dataset.kind=kind||''; n.hidden=false; noteTimer=setTimeout(()=>n.hidden=true,4000); } else n.hidden=true; }
@@ -197,13 +203,13 @@ function snapshot(){ return new Promise((ok,no)=>{
     if(!d||!d.ok||typeof d.data!=='string') return no(new Error('지금은 저장할 판이 없다. 게임이 진행 중일 때 저장하자.'));
     const i=d.info||{}, s=current||DEF;
     ok({format:SAVE.format,lab:(/v([\d.]+)/.exec($('.edition').textContent)||[])[1]||'',savedAt:new Date().toISOString(),set:{...s},
-      summary:{title:`${i.level}층`,date:`남은 시간 ${i.min}분 ${i.sec}초`,line:`체력 ${i.hp}/${i.hpMax} · 벽돌색 ${brickName(s.b)} · 음악 ${musicName(s.m)}`},data:d.data}); };
+      summary:{title:`${i.level}층`,date:`남은 시간 ${i.min}분 ${i.sec}초`,line:`체력 ${i.hp}/${i.hpMax} · 색상 ${colorName(s.b)} · 음악 ${musicName(s.m)}`},data:d.data}); };
   cmd('save'); }); }
 function readSlot(n){ try{ const t=localStorage.getItem(SAVE.slot+n), d=t?JSON.parse(t):null; return valid(d)?d:null; }catch(e){ return null; } }
 function slotNote(d){
   if(!d) return '비어 있음';
   const u=d.summary||{}, t=new Date(d.savedAt), pad=v=>String(v).padStart(2,'0'), when=isNaN(t)?'':` · ${t.getMonth()+1}/${t.getDate()} ${pad(t.getHours())}:${pad(t.getMinutes())} 저장`;
-  return [u.title,u.date,u.line].filter(Boolean).map(x=>clip(x)).join(' · ')+when;
+  return [u.title,u.date,lineOf(d)].filter(Boolean).map(x=>clip(x)).join(' · ')+when;
 }
 function saveToSlot(n){
   const d=snap; if(!d)return;
@@ -276,7 +282,7 @@ function loadMenu(){
   for(let n=1;n<=SLOTS;n++){ const d=readSlot(n); items.push({label:`브라우저 칸 ${n}`,note:slotNote(d),off:!d,
     fn:()=>(on?confirmMenu(`지금 판을 두고 칸 ${n}${eul(n)} 불러올까? 저장하지 않은 진행은 사라진다.`,[['불러온다',()=>loadFrom(readSlot(n))],['그만둔다',loadMenu]],loadMenu):loadFrom(readSlot(n)))}); }
   items.push({label:'파일에서 불러오기',note:'.dhsave',fn:()=>$('#load-file').click()},['돌아가기',null]);
-  openMenu('불러오기',items,null,'불러오면 저장한 그 순간부터 이어 한다. 벽돌색과 음악도 저장할 때 그대로이고, 편집기의 코드는 바뀌지 않는다.');
+  openMenu('불러오기',items,null,'불러오면 저장한 그 순간부터 이어 한다. 색상과 음악도 저장할 때 그대로이고, 편집기의 코드는 바뀌지 않는다.');
 }
 for(const id of ['#game-save','#fs-save']) $(id).onclick=saveMenu;
 for(const id of ['#game-load','#fs-load']) $(id).onclick=loadMenu;
@@ -288,7 +294,7 @@ function renderSlotList(){
   const box=$('#slot-list'); if(!box)return; box.replaceChildren();
   for(let n=1;n<=SLOTS;n++){
     const d=readSlot(n), b=el('button'), row=el('div'), u=(d&&d.summary)||{}; b.type='button'; b.className='slot-btn'; b.disabled=!d; row.className='slot-row';
-    b.append(el('b',`칸 ${n}`),el('span',d?slotNote({...d,summary:{title:u.title,date:u.date}}):slotNote(null))); if(d&&u.line) b.append(el('small',clip(u.line)));
+    b.append(el('b',`칸 ${n}`),el('span',d?slotNote({...d,summary:{title:u.title,date:u.date}}):slotNote(null))); if(d&&u.line) b.append(el('small',clip(lineOf(d))));
     b.onclick=()=>{ const s=readSlot(n); if(!s) return renderSlotList(); if(!playing()) loadFrom(s); else confirmMenu(`지금 판을 두고 칸 ${n}${eul(n)} 불러올까? 저장하지 않은 진행은 사라진다.`,[['불러온다',()=>loadFrom(readSlot(n))],['그만둔다',null]]); };
     row.append(b);
     if(d){ const x=el('button','지우기'); x.type='button'; x.className='slot-del'; x.setAttribute('aria-label',`칸 ${n} 지우기`); let t=0;
@@ -308,13 +314,15 @@ function start(cont){
   const p=parseSortie(out);
   if(p.err){ result('동현페 규약 오류: '+p.err,'error'); status('규약 오류','error'); return; }
   const s=p.set, sv=cont?readSave():null; setCard(s);
-  result((p.note?p.note+' ':'')+(sv?`저장한 ${sv.level}층 · ${sv.min}분 · 체력 ${sv.hp}칸에서 잇는다. 벽돌색 ${brickName(s.b)} · 음악 ${musicName(s.m)}은 지금 코드 값을 따른다.`:`${s.l}층 · 남은 시간 ${s.t}분 · 체력 ${s.h}칸 · 벽돌색 ${brickName(s.b)} · 음악 ${musicName(s.m)}. 이 설정으로 나선다.`)+(TOUCH_ONLY?' 게임 화면 아래의 화면 단추로 움직인다.':' 게임 화면을 누르면 키보드가 게임으로 간다.'));
+  result((p.note?p.note+' ':'')+(sv?`저장한 ${sv.level}층 · ${sv.min}분 · 체력 ${sv.hp}칸에서 잇는다. 색상 ${colorName(s.b)} · 음악 ${musicName(s.m)}은 지금 코드 값을 따른다.`:`${s.l}층 · 남은 시간 ${s.t}분 · 체력 ${s.h}칸 · 색상 ${colorName(s.b)} · 음악 ${musicName(s.m)}. 이 설정으로 나선다.`)+(TOUCH_ONLY?' 게임 화면 아래의 화면 단추로 움직인다.':' 게임 화면을 누르면 키보드가 게임으로 간다.'));
   launch(s,!!sv);
 }
 $('#poster-run').onclick=()=>start(false);
 $('#poster-cont').onclick=()=>start(true);
 
 /* 첫 화면: 예제 01의 값을 보여 주고, 게임은 출전을 누를 때 불러온다 */
+/* 예제를 고르면, 하고 있는 판이 없을 때 그 값을 설정 카드와 시작 카드에 미리 보인다(색상에 따라 시작 카드의 색도 바뀐다) */
+function previewCard(){ if(frame) return; try{ const p=parseSortie(Donghyun.run(code.value,{maxSteps:300000}).output); if(p.set) setCard(p.set); }catch(e){} }
 (function preview(){try{const p=parseSortie(Donghyun.run(code.value,{maxSteps:300000}).output);if(p.set)setCard(p.set);}catch(e){setCard(DEF);}contButton();})();
-if(typeof window!=='undefined') window.PeLab={parseSortie,FIELDS,SAVE,readSlot};
+if(typeof window!=='undefined') window.PeLab={parseSortie,FIELDS,SAVE,readSlot,setOf,colorName};
 })();

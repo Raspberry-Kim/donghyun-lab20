@@ -6,16 +6,19 @@
 <meta name="robots" content="noindex,nofollow">
 <title>동현페 게임 화면</title>
 <style>
-:root{--bg:#0b0a08;--panel:#211d16;--line:#3d3526;--ink:#efe6d0;--mute:#a59a80;--brick:#988547;--brick-d:#5c5029;--skirt:#7b8ac6;--top:#fcd8fc}
+:root{--bg:#0b0a08;--panel:#211d16;--line:#3d3526;--ink:#efe6d0;--mute:#a59a80;--brick:#988547;--brick-d:#5c5029;--skirt:#7b8ac6;--top:#fcd8fc;--void:#000;--box:rgba(21,19,15,.92);--on:#14162a;--pad:#141210}
+/* 색상 0 그레이스케일(기본) · 1 컬러 · 2 본래 색. 화면 둘레와 시작 카드도 게임 화면의 색에 맞춘다 */
+html.c0{--bg:#0a0b0d;--panel:#1c1e22;--line:#454a51;--ink:#f0f3f6;--mute:#a8aeb5;--brick:#5c6168;--brick-d:#2c2f34;--skirt:#a8aeb5;--top:#f0f3f6;--void:#0a0b0d;--box:rgba(10,11,13,.93);--on:#0a0b0d;--pad:#131417}
+html.c1{--bg:#100e18;--panel:#231f31;--line:#454061;--ink:#f3ecdd;--mute:#aaa3b8;--brick:#b8a36a;--brick-d:#6f6242;--skirt:#9aa6dc;--top:#f6d9ee;--void:#100e18;--box:rgba(16,14,24,.93);--on:#14162a;--pad:#181524}
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:15px/1.55 "Pretendard","Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",system-ui,sans-serif;overflow:hidden}
 body{display:grid;grid-template:"s" minmax(0,1fr) "p" auto/minmax(0,1fr)}
-#stage{grid-area:s;position:relative;min-width:0;min-height:0;background:#000}
+#stage{grid-area:s;position:relative;min-width:0;min-height:0;background:var(--void)}
 #screen{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges;display:block;object-fit:contain;outline:0}
 #card{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:5%;text-align:center;overflow:auto;
   background:repeating-linear-gradient(0deg,transparent 0 30px,rgba(0,0,0,.28) 30px 32px),repeating-linear-gradient(90deg,var(--brick) 0 62px,var(--brick-d) 62px 64px)}
 #card[hidden],#veil[hidden],#toast[hidden]{display:none}
-#card .box{background:rgba(21,19,15,.92);border:2px solid var(--line);border-radius:8px;padding:18px 20px;max-width:520px;width:100%}
+#card .box{background:var(--box);border:2px solid var(--line);border-radius:8px;padding:18px 20px;max-width:520px;width:100%}
 #card h2{margin:0 0 6px;font-size:22px;letter-spacing:-.02em}
 #card p{margin:6px 0}
 #card p.story{color:var(--top);font-size:16px;word-break:keep-all}
@@ -23,12 +26,12 @@ body{display:grid;grid-template:"s" minmax(0,1fr) "p" auto/minmax(0,1fr)}
 #card .acts{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:12px}
 button{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:7px 12px;cursor:pointer;min-height:36px}
 button:focus-visible{outline:2px solid var(--skirt);outline-offset:2px}
-button.primary{background:var(--skirt);color:#14162a;border-color:var(--skirt);font-weight:700}
+button.primary{background:var(--skirt);color:var(--on);border-color:var(--skirt);font-weight:700}
 button[hidden]{display:none}
 button[aria-pressed="true"]{background:var(--brick-d);border-color:var(--brick)}
 #veil{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(10,9,7,.62);font-size:18px;font-weight:700;letter-spacing:.02em;text-align:center;padding:0 12px;word-break:keep-all}
-#toast{position:absolute;left:50%;top:10px;transform:translateX(-50%);max-width:92%;background:rgba(21,19,15,.9);border:1px solid var(--brick);border-radius:99px;padding:4px 14px;font-size:13.5px;text-align:center;pointer-events:none;word-break:keep-all}
-#pad{grid-area:p;display:none;padding:10px 14px calc(10px + env(safe-area-inset-bottom));justify-content:space-between;align-items:center;gap:10px;user-select:none;-webkit-user-select:none;touch-action:none;background:#141210}
+#toast{position:absolute;left:50%;top:10px;transform:translateX(-50%);max-width:92%;background:var(--box);border:1px solid var(--brick);border-radius:99px;padding:4px 14px;font-size:13.5px;text-align:center;pointer-events:none;word-break:keep-all}
+#pad{grid-area:p;display:none;padding:10px 14px calc(10px + env(safe-area-inset-bottom));justify-content:space-between;align-items:center;gap:10px;user-select:none;-webkit-user-select:none;touch-action:none;background:var(--pad)}
 #pad .d{display:grid;grid-template-columns:repeat(3,50px);grid-template-rows:repeat(3,50px);gap:3px}
 #pad button{min-width:50px;min-height:50px;font-weight:700;touch-action:none;padding:0}
 #pad .mid{display:flex;flex-direction:column;gap:6px}
@@ -48,7 +51,7 @@ html.touch #pad{display:flex}
 </style>
 <script>
 /* 화면 버튼은 손가락으로 쓰는 기기에서만 보인다. 틀(iframe) 안에서는 매체 질의가 듣지 않는 브라우저가 있어 바깥 페이지의 판정도 본다. */
-(function(){var t=false;try{t=matchMedia('(pointer:coarse)').matches||(navigator.maxTouchPoints>0&&!matchMedia('(any-pointer:fine)').matches);if(!t&&parent!==window)t=parent.document.documentElement.classList.contains('touch-only');}catch(e){}
+(function(){var c=/(?:^|[#&])b=([012])(?:&|$)/.exec(location.hash);document.documentElement.classList.add('c'+(c?c[1]:0));var t=false;try{t=matchMedia('(pointer:coarse)').matches||(navigator.maxTouchPoints>0&&!matchMedia('(any-pointer:fine)').matches);if(!t&&parent!==window)t=parent.document.documentElement.classList.contains('touch-only');}catch(e){}
 if(t)document.documentElement.classList.add('touch');addEventListener('touchstart',function(){document.documentElement.classList.add('touch');},{once:true,passive:true});})();
 </script>
 </head>
@@ -85,7 +88,7 @@ if(t)document.documentElement.classList.add('touch');addEventListener('touchstar
 <script src="./game.js"></script>
 <script src="./gamepad.js"></script>
 <script>
-/* 동현페 게임 화면. 바깥 실험실 페이지가 #l=층&t=분&h=체력 칸&b=벽돌색&m=음악[&c=1 이어하기][&s=1 저장 묶음 불러오기]로 띄운다. 따로 열면 기본값으로 시작한다. */
+/* 동현페 게임 화면. 바깥 실험실 페이지가 #l=층&t=분&h=체력 칸&b=색상&m=음악[&c=1 이어하기][&s=1 저장 묶음 불러오기]로 띄운다. 따로 열면 기본값으로 시작한다. */
 (function () {
   'use strict';
   const $ = (s) => document.querySelector(s);
@@ -99,7 +102,7 @@ if(t)document.documentElement.classList.add('touch');addEventListener('touchstar
   /* ---- 바깥에서 받은 설정 ---- */
   const arg = {}; for (const kv of location.hash.slice(1).split('&')) { const [k, v] = kv.split('='); if (k) arg[k] = parseInt(v, 10); }
   const num = (k, lo, hi, def) => Number.isInteger(arg[k]) && arg[k] >= lo && arg[k] <= hi ? arg[k] : def;
-  const SET = S.set = { level: num('l', 1, LAST_LEVEL, 1), min: num('t', 1, 60, 60), hp: num('h', 1, 9, 3), brick: num('b', 0, 1, 0), music: num('m', 0, 1, 1), cont: num('c', 0, 1, 0), fromSave: num('s', 0, 1, 0) };
+  const SET = S.set = { level: num('l', 1, LAST_LEVEL, 1), min: num('t', 1, 60, 60), hp: num('h', 1, 9, 3), color: num('b', 0, 2, 0), music: num('m', 0, 1, 1), cont: num('c', 0, 1, 0), fromSave: num('s', 0, 1, 0) };
 
   /* ---- 저장(이 브라우저 안): 막혀 있으면 이 창이 열려 있는 동안만 기억한다 ---- */
   const mem = {}; let storeOk = true;
@@ -278,7 +281,7 @@ if(t)document.documentElement.classList.add('touch');addEventListener('touchstar
     try {
       const atlas = await loadAtlas(), data = unpackData(window.__PE_DATA); audioMake();
       game = window.DonghyunPe.makeGame(window.DonghyunPeCore.makeCore, data, atlas, { music: !!SET.music, onEvent, onIo: (a, v, t) => { if (apu) apu.io(a, v, t); } });
-      game.setBrick(!SET.brick);
+      game.setColor(SET.color);
       S.ready = true; requestAnimationFrame(loop);
       if (SET.fromSave) {
         const text = await askLoad(), bytes = typeof text === 'string' ? window.DonghyunPe.unpack(text) : null;

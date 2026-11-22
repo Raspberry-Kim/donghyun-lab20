@@ -60,13 +60,14 @@
     return G;
   }
 
-  /* 벽돌색: 층마다 다른 주제색(팔레트 0의 0·2번 색과 팔레트 1의 네 색)을 읽어, 그 색상에서 24° 안쪽인 배경색을 어두운 파스텔 노랑으로 바꾼다.
-     밝기 순서는 지킨다. 팔레트 4(횃불·체력·글자)와 금색(c0a800), 회색·흰색·검정은 그대로 둔다. 색은 0xAABBGGRR */
-  const BRICK_HUE = 46 / 360, BRICK_SAT = 0.36, BRICK_WIN = 24, GOLD = 0xFF00A8C0;
-  function hsl2rgb(h, s, l) {
-    const f = (n) => { const k = (n + h * 12) % 12; const a = s * Math.min(l, 1 - l); return Math.round(255 * (l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1)))); };
-    return [f(0), f(8), f(4)];
-  }
+  /* ---- 색상(셋 가운데 하나) ----
+     0 그레이스케일: 흰 바탕 흑백 모니터에 CGA 네 색 화면을 띄웠을 때처럼 검정·어두운 회색·밝은 회색·흰색 네 단계로만 그린다.
+     1 컬러: 파스텔. 층마다 다른 주제색(벽돌)은 버터빛 노랑으로 모으고, 나머지 색은 색상을 지킨 채 채도를 낮추고 밝기를 올린다.
+     2 본래 색: 원작 색표 그대로(색 바꾸기를 거치지 않는다).
+     색은 0xAABBGGRR. 색표(팔레트) 단위로 바꾸므로 한 화면에 드는 품은 본래 색과 같다 */
+  const GOLD = 0xFF00A8C0, BRICK_WIN = 24;
+  const abgr = (r, g, b) => (0xFF000000 | (b << 16) | (g << 8) | r) >>> 0;
+  const lumOf = (v) => (0.299 * (v & 255) + 0.587 * ((v >> 8) & 255) + 0.114 * ((v >> 16) & 255)) / 255;
   /* 색상(도). 채도가 낮으면 -1 */
   function hueOf(v) {
     const r = v & 255, g = (v >> 8) & 255, b = (v >> 16) & 255, mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
@@ -74,34 +75,71 @@
     const h = mx === r ? ((g - b) / d + 6) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
     return h * 60;
   }
-  function makeBrick() {
-    let T = [], sig = '';
-    const f = (v, k) => {
-      if ((k >> 2) === 4 || v === GOLD) return v;
-      const h = hueOf(v); if (h < 0) return v;
-      let hit = false; for (let i = 0; i < T.length; i++) { const d = Math.abs(h - T[i]); if (Math.min(d, 360 - d) <= BRICK_WIN) { hit = true; break; } }
-      if (!hit) return v;
-      const r = v & 255, g = (v >> 8) & 255, b = (v >> 16) & 255, l = (Math.max(r, g, b) + Math.min(r, g, b)) / 510;
-      const c = hsl2rgb(BRICK_HUE, BRICK_SAT, l <= 0.5 ? l * 1.22 + 0.01 : 0.62 + (l - 0.5) * 0.35);
-      return (0xFF000000 | (c[2] << 16) | (c[1] << 8) | c[0]) >>> 0;
+  function hsv(h, s, v) {
+    const f = (n) => { const k = (n + h / 60) % 6; return Math.round(255 * (v - v * s * Math.max(0, Math.min(k, 4 - k, 1)))); };
+    return abgr(f(5), f(3), f(1));
+  }
+  /* 그레이스케일 네 단계: 흰 형광체는 살짝 푸른 흰색이다. 단계 경계는 밝기(0–1) */
+  const GRAY = [abgr(10, 11, 13), abgr(92, 97, 104), abgr(168, 174, 181), abgr(240, 243, 246)], GRAY_T = [0.08, 0.21, 0.52];
+  const grayLevel = (v) => { const l = lumOf(v); return l < GRAY_T[0] ? 0 : l < GRAY_T[1] ? 1 : l < GRAY_T[2] ? 2 : 3; };
+  /* 파스텔: 검정은 짙은 남보라, 회색은 옅은 보랏빛 회색, 벽돌은 버터빛 노랑(색상 46°), 나머지는 채도 절반·밝기 올림 */
+  const INK = abgr(16, 14, 24), BRICK_HUE = 46, STONE_HUE = 32;
+  function pastelOf(v, brick) {
+    const r = v & 255, g = (v >> 8) & 255, b = (v >> 16) & 255, mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn, val = mx / 255;
+    if (mx < 20) return INK;
+    const h = hueOf(v);
+    if (h < 0) return hsv(STONE_HUE, 0.16 - 0.11 * val, 0.38 + 0.60 * val);
+    if (brick) return hsv(BRICK_HUE, 0.46 - 0.22 * val, 0.56 + 0.42 * Math.pow(val, 0.6));
+    return hsv(h, Math.min(0.5, 0.52 * d / mx), 0.40 + 0.58 * val);
+  }
+  function makeTone() {
+    let T = [], sig = '', mode = 0;
+    const isBrick = (v) => {
+      if (v === GOLD) return false;
+      const h = hueOf(v); if (h < 0) return false;
+      for (let i = 0; i < T.length; i++) { const d = Math.abs(h - T[i]); if (Math.min(d, 360 - d) <= BRICK_WIN) return true; }
+      return false;
     };
-    f.theme = (raw) => {
-      const t = []; for (const i of [0, 2, 4, 5, 6, 7]) { const h = hueOf(raw[i]); if (h >= 0 && raw[i] !== GOLD) t.push(Math.round(h)); }
-      const s2 = t.join(','); if (s2 === sig) return false; sig = s2; T = t; return true;
+    const f = {
+      /* 팔레트 하나(k0부터 네 색)의 보이는 색. 벽돌 판정은 배경 팔레트(4번 = 횃불·체력·글자는 빼고)와 스프라이트 팔레트 6(궁전 층의 바닥 조각)에만 한다 */
+      pal(raw, out, k0, obj) {
+        const pi = k0 >> 2, br = obj ? pi === 6 : pi !== 4;
+        for (let k = k0; k < k0 + 4; k++) out[k] = mode === 0 ? GRAY[grayLevel(raw[k])] : pastelOf(raw[k], br && isBrick(raw[k]));
+      },
+      /* 주제색(배경 팔레트 0의 0·2번 색과 팔레트 1의 네 색)의 색상을 읽는다. 바뀌었으면 true */
+      theme(raw) {
+        const t = []; for (const i of [0, 2, 4, 5, 6, 7]) { const h = hueOf(raw[i]); if (h >= 0 && raw[i] !== GOLD) t.push(Math.round(h)); }
+        const s2 = t.join(','); if (s2 === sig) return false; sig = s2; T = t; return true;
+      },
+      setMode(m) { mode = m; },
+      isBrick,
     };
     return f;
+  }
+  /* 아몰랑 그림(스무 색)의 그레이스케일 판: 색마다 단계를 정한다. 치마는 어두운 회색, 살은 밝은 회색, 윗옷은 흰색 */
+  const HERO_GRAY = { 0x7b8ac6: 1, 0x5967a3: 0 };
+  function grayAtlas(A32) {
+    const o = new Uint32Array(A32.length), memo = new Map();
+    for (let i = 0; i < A32.length; i++) {
+      const v = A32[i]; if (!(v >>> 24)) continue;
+      let g = memo.get(v);
+      if (g === undefined) { const key = ((v & 255) << 16) | (v & 0xFF00) | ((v >> 16) & 255); g = GRAY[key in HERO_GRAY ? HERO_GRAY[key] : grayLevel(v)]; memo.set(v, g); }
+      o[i] = g;
+    }
+    return o;
   }
 
   /* data: 자료 바이트 배열(롬과 같은 주소 배치), atlas: {rgba, w, h, frames:{'g_k':[x,y,w,h,ox,oy,rest]}}, makeCore: 핵심부 */
   function makeGame(makeCore, data, atlas, opts) {
     opts = opts || {};
     const G = decodeGroups(data);
-    const A32 = new Uint32Array(atlas.rgba.buffer, atlas.rgba.byteOffset, atlas.rgba.byteLength >> 2), AW = atlas.w;
+    const A32C = new Uint32Array(atlas.rgba.buffer, atlas.rgba.byteOffset, atlas.rgba.byteLength >> 2), A32G = grayAtlas(A32C), AW = atlas.w;
+    let A32 = A32G;
     const out = new Uint8ClampedArray(OW * OH * 4), out32 = new Uint32Array(out.buffer);
     const stat = { frames: 0, hero: 0, ok: 0, miss: 0, hidden: 0, wrong: 0 };
-    const S = { mode: 'boot', swap: true, brick: true, front: true, info: null, stat, out, onEvent: opts.onEvent || null, onIo: opts.onIo || null };
-    const brick = makeBrick();
-    const c = makeCore(data, { recolor: brick, onIo: (a, v, t) => { if (S.onIo) S.onIo(a, v, t); } });
+    const S = { mode: 'boot', swap: true, color: 0, front: true, info: null, stat, out, onEvent: opts.onEvent || null, onIo: opts.onIo || null };
+    const tone = makeTone();
+    const c = makeCore(data, { recolor: tone, onIo: (a, v, t) => { if (S.onIo) S.onIo(a, v, t); } });
     const m = c.m;
     /* 방 칸 종류(0–31)마다의 표시: 0x80·0x40이 '주인공 앞에 놓이는 칸'(왼쪽 반·오른쪽 반). 방 지도는 한 줄 11칸 */
     const FRONT = new Uint8Array(32), ROWOFF = [0, 0, 0], ROOMMAP = 0xC0AC;
@@ -245,7 +283,8 @@
     }
     S.core = c; S.frame = frame; S.start = start; S.boot = boot; S.snapshot = snapshot;
     S.key = (name, down) => c.key(name, down); S.setKeys = (v) => c.setKeys(v);
-    S.setBrick = (v) => { S.brick = v; c.setRecolor(v ? brick : null); };
+    /* 색상: 0 그레이스케일 · 1 컬러(파스텔) · 2 본래 색. 아몰랑 그림은 그레이스케일에서만 네 단계 판을 쓴다 */
+    S.setColor = (v) => { v = v === 1 || v === 2 ? v : 0; S.color = v; A32 = v === 0 ? A32G : A32C; tone.setMode(v); c.setRecolor(v === 2 ? null : tone); };
     S.setMusic = (v) => { S.music = !!v; };
     S.dead = () => m[V.group] === 0x69;
     /* 저장·복원: 게임 중일 때만 낸다. 되돌린 뒤에는 그림 맞추기 기억을 비운다(다음 화면부터 다시 맞춘다) */
@@ -280,6 +319,6 @@
     }
     return Uint8Array.from(o);
   }
-  const api = { SW, SH, OW, OH, makeGame, decodeGroups, makeBrick, pack, unpack };
+  const api = { SW, SH, OW, OH, makeGame, decodeGroups, makeTone, GRAY, INK, GOLD, pastelOf, grayLevel, pack, unpack };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.DonghyunPe = api;
 })(typeof self !== 'undefined' ? self : this);
