@@ -50,7 +50,7 @@ function makeCore(rom, opts) {
   const SW = 160, SH = 144;
   const fb = new Uint32Array(SW * SH), base = new Uint32Array(SW * SH), over = new Uint32Array(SW * SH), heroPx = new Uint32Array(SW * SH), fgm = new Uint8Array(SW * SH), actPx = new Uint32Array(SW * SH), heroIx = new Uint8Array(SW * SH), actIx = new Uint8Array(SW * SH), bgi = new Uint8Array(SW * SH);
   let recolor = opts.recolor || null, limit10 = !!opts.limit10;
-  function rgb(lo, hi) { const c = lo | (hi << 8); return 0xFF000000 | (((c >> 10) & 31) << 19) | (((c >> 5) & 31) << 11) | ((c & 31) << 3); }
+  function rgb(lo, hi) { const c = lo | (hi << 8); return (0xFF000000 | (((c >> 10) & 31) << 19) | (((c >> 5) & 31) << 11) | ((c & 31) << 3)) >>> 0; }
   /* recolor(v, k): 배경색 바꾸기(k는 0–31 색 번호). recolor.theme가 있으면 주제색(팔레트 0·1)이 바뀔 때 전체를 다시 계산한다 */
   function setBg(i) {
     const k = i >> 1, v = rgb(bgpal[k * 2], bgpal[k * 2 + 1]); bgRaw[k] = v;
@@ -243,11 +243,37 @@ function makeCore(rom, opts) {
   }
   function runTo(t) { while (cyc < t) step(); }
   m[0xFF40] = 0x91; m[0xFF47] = 0xFC; m[0xFF48] = 0xFF; m[0xFF49] = 0xFF; m[0xFF0F] = 0;
+  /* ---- 저장·복원: 화면과 화면 사이(frame()이 끝난 뒤)의 상태를 바이트 묶음 하나로 내고, 그대로 되돌린다.
+     담는 것: 기억 장치 C000–FFFF, 화면 기억 장치, 색표, 레지스터와 화면 시간. 자료(rom)와 옮긴 프로그램은 담지 않는다 ---- */
+  const SHEAD = 12, SNUM = 35, SLEN = SHEAD + 0x4000 + 0x4000 + 64 + 64 + 10 + SNUM * 8;
+  function ssum(b) { let h = 0x811C9DC5; for (let i = SHEAD; i < b.length; i++) { h ^= b[i]; h = Math.imul(h, 0x01000193); } return h >>> 0; }
+  function save() {
+    const b = new Uint8Array(SLEN), dv = new DataView(b.buffer); let o = SHEAD;
+    b[0] = 0x44; b[1] = 0x48; b[2] = 0x50; b[3] = 0x45; b[4] = 1;            // 'DHPE', 묶음 판 1
+    b.set(m.subarray(0xC000), o); o += 0x4000; b.set(vram, o); o += 0x4000; b.set(bgpal, o); o += 64; b.set(objpal, o); o += 64; b.set(lineObjX, o); o += 10;
+    for (const v of [A, B, C, D, E, H, L, SP, fz, fn, fh, fc, pc, cyc, ime, halted, eiPend, bank, bankOff, vbk, lcdOn, ly, lineStart, evt, frames, winLine, offUntil, stat, joySel, ph, firstLine, m3len, bcps, ocps, nLineObj]) { dv.setFloat64(o, v, true); o += 8; }
+    dv.setUint32(8, ssum(b), true);
+    return b;
+  }
+  /* 묶음이 맞지 않으면(길이·표식·검사합) 아무것도 바꾸지 않고 false */
+  function load(b) {
+    if (!b || b.length !== SLEN || b[0] !== 0x44 || b[1] !== 0x48 || b[2] !== 0x50 || b[3] !== 0x45 || b[4] !== 1) return false;
+    const dv = new DataView(b.buffer, b.byteOffset, b.byteLength); if (dv.getUint32(8, true) !== ssum(b)) return false;
+    let o = SHEAD;
+    m.set(b.subarray(o, o + 0x4000), 0xC000); o += 0x4000; vram.set(b.subarray(o, o + 0x4000)); o += 0x4000; bgpal.set(b.subarray(o, o + 64)); o += 64; objpal.set(b.subarray(o, o + 64)); o += 64; lineObjX.set(b.subarray(o, o + 10)); o += 10;
+    const n = () => { const v = dv.getFloat64(o, true); o += 8; return v; };
+    A = n(); B = n(); C = n(); D = n(); E = n(); H = n(); L = n(); SP = n(); fz = n(); fn = n(); fh = n(); fc = n(); pc = n(); cyc = n(); ime = n(); halted = n(); eiPend = n(); bank = n(); bankOff = n(); vbk = n();
+    lcdOn = n(); ly = n(); lineStart = n(); evt = n(); frames = n(); winLine = n(); offUntil = n(); stat = n(); joySel = n(); ph = n(); firstLine = n(); m3len = n(); bcps = n(); ocps = n(); nLineObj = n();
+    keys = 0; frameDone = 0;
+    for (let i = 0; i < 64; i += 2) { setBg(i); setObj(i); }
+    setRecolor(recolor);
+    return true;
+  }
   const KEYBIT = { right: 1, left: 2, up: 4, down: 8, A: 16, B: 32, select: 64, start: 128 };
   return {
     m, vram, fb, base, over, heroPx, actPx, fgm, heroIx, actIx, bgi, brk() { frameDone = 1; }, frame, runTo, step, hook, flowHook, rd, wr,
     key(name, down) { const b = KEYBIT[name]; if (down) keys |= b; else keys &= ~b; },
-    setKeys(v) { keys = v; }, setRecolor,
+    setKeys(v) { keys = v; }, setRecolor, save, load,
     get pc() { return pc; }, set pc(v) { pc = v; },
     get frames() { return frames; }, get cyc() { return cyc; }, get bank() { return bank; },
     reg() { return { A, B, C, D, E, H, L, SP, fz, fn, fh, fc, pc, ime, halted, bank, ly, lcdOn }; },

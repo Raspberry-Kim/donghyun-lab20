@@ -85,21 +85,21 @@ if(t)document.documentElement.classList.add('touch');addEventListener('touchstar
 <script src="./game.js"></script>
 <script src="./gamepad.js"></script>
 <script>
-/* 동현페 게임 화면. 바깥 실험실 페이지가 #l=층&t=분&h=체력 칸&b=벽돌색&m=음악[&c=1 이어하기]로 띄운다. 따로 열면 기본값으로 시작한다. */
+/* 동현페 게임 화면. 바깥 실험실 페이지가 #l=층&t=분&h=체력 칸&b=벽돌색&m=음악[&c=1 이어하기][&s=1 저장 묶음 불러오기]로 띄운다. 따로 열면 기본값으로 시작한다. */
 (function () {
   'use strict';
   const $ = (s) => document.querySelector(s);
   const FPS = 4194304 / 70224, SAVE_KEY = 'donghyunpe.save.v1', BEST_KEY = 'donghyunpe.best.v1', LAST_LEVEL = 14;
   const cv = $('#screen'), ctx = cv.getContext('2d'), img = ctx.createImageData(320, 288);
   let game = null, apu = null, actx = null, gain = null, audioAt = 0, bufL = null, bufR = null;
-  let running = false, paused = false, muted = false, last = 0, acc = 0, shown = 0, deadFor = 0, toastT = 0, soundSaid = '';
+  let running = false, paused = false, held = false, loadWait = null, muted = false, last = 0, acc = 0, shown = 0, deadFor = 0, toastT = 0, soundSaid = '';
   const S = window.__pe = { ready: false, frames: 0, error: null, events: [], audio: { frames: 0, peak: 0 }, get game() { return game; }, get running() { return running; }, get paused() { return paused; } };
   const post = (state, detail) => { try { if (parent !== window) parent.postMessage({ type: 'dh-pe', state, detail }, '*'); } catch (e) {} };
 
   /* ---- 바깥에서 받은 설정 ---- */
   const arg = {}; for (const kv of location.hash.slice(1).split('&')) { const [k, v] = kv.split('='); if (k) arg[k] = parseInt(v, 10); }
   const num = (k, lo, hi, def) => Number.isInteger(arg[k]) && arg[k] >= lo && arg[k] <= hi ? arg[k] : def;
-  const SET = S.set = { level: num('l', 1, LAST_LEVEL, 1), min: num('t', 1, 60, 60), hp: num('h', 1, 9, 3), brick: num('b', 0, 1, 0), music: num('m', 0, 1, 0), cont: num('c', 0, 1, 0) };
+  const SET = S.set = { level: num('l', 1, LAST_LEVEL, 1), min: num('t', 1, 60, 60), hp: num('h', 1, 9, 3), brick: num('b', 0, 1, 0), music: num('m', 0, 1, 1), cont: num('c', 0, 1, 0), fromSave: num('s', 0, 1, 0) };
 
   /* ---- 저장(이 브라우저 안): 막혀 있으면 이 창이 열려 있는 동안만 기억한다 ---- */
   const mem = {}; let storeOk = true;
@@ -190,7 +190,7 @@ if(t)document.documentElement.classList.add('touch');addEventListener('touchstar
   }
   function loop(t) {
     requestAnimationFrame(loop);
-    if (!running || paused) { last = t; return; }
+    if (!running || paused || held) { last = t; return; }
     acc += Math.min(100, t - last); last = t; let n = 0; const ms = 1000 / FPS;
     try { while (acc >= ms && n < 4 && running) { if (!step()) break; acc -= ms; n++; } } catch (e) { fail(e); return; }
     if (n) { img.data.set(game.out); ctx.putImageData(img, 0, 0); if (++shown % 30 === 0) status(); }
@@ -218,9 +218,48 @@ if(t)document.documentElement.classList.add('touch');addEventListener('touchstar
   });
   addEventListener('keyup', (e) => { const k = KEY[e.code]; if (k && game) { release(k); if (running) e.preventDefault(); } });
   addEventListener('pointerdown', audioOn, true);
-  addEventListener('blur', () => { if (game) for (const k of PADKEYS) { delete late[k]; game.key(k, false); } post('blur'); });
-  addEventListener('focus', () => post('focus'));
-  addEventListener('message', (e) => { if (e.data && e.data.type === 'dh-wake') audioOn(); });
+  addEventListener('blur', () => { if (game) for (const k of PADKEYS) { delete late[k]; game.key(k, false); } tellSoon(); });
+  /* '키보드가 게임에 있는가'는 이 틀의 창을 보고 알린다. Firefox는 초점 사건이 올 때 아직 초점이 없다고 답하는 때가 있어, 조금 뒤와 누를 때 한 번 더 본다 */
+  let hasKeys = null;
+  const tellFocus = () => { const on = document.hasFocus(); if (on !== hasKeys) { hasKeys = on; post(on ? 'focus' : 'blur'); } };
+  const tellSoon = () => { tellFocus(); setTimeout(tellFocus, 80); };
+  addEventListener('focus', tellSoon); addEventListener('mousedown', tellSoon, true); addEventListener('keydown', tellFocus, true);
+  /* 바깥 페이지의 부탁: hold 바깥 메뉴가 떠 있는 동안 멈추기 · save 지금 판을 묶음으로 내기(snap으로 답한다) · load-data 불러올 묶음 */
+  function hold(on) { held = !!on; if (held && game) for (const k of PADKEYS) { delete late[k]; game.key(k, false); } }
+  function snap() {
+    let b = null; try { if (game && running) b = game.saveState(); } catch (e) { b = null; }
+    post('snap', b ? { ok: true, data: window.DonghyunPe.pack(b), info: game.snapshot() } : { ok: false });
+  }
+  /* 복원한 뒤 소리 장치를 게임의 기억 장치에 맞춘다. 울리던 음은 다시 울리지 않고, 다음 음부터 난다 */
+  function apuRestore() {
+    if (!apu) return;
+    const m = game.core.m; apu.sync(game.core.cyc); apu.write(0xFF26, 0); apu.write(0xFF26, m[0xFF26]);
+    for (let a = 0xFF10; a <= 0xFF25; a++) apu.write(a, a === 0xFF14 || a === 0xFF19 || a === 0xFF1E || a === 0xFF23 ? m[a] & 0x7F : m[a]);
+    for (let a = 0xFF30; a < 0xFF40; a++) apu.write(a, m[a]);
+    apu.sync(game.core.cyc);
+  }
+  function resume(bytes) {
+    audioOn();
+    try { game.start(firstSave()); if (!bytes || !game.loadState(bytes)) return false; } catch (e) { return false; }
+    apuRestore();
+    for (const k of PADKEYS) { delete late[k]; game.key(k, false); }
+    $('#card').hidden = true; $('#toast').hidden = true; paused = false; $('#bPause').setAttribute('aria-pressed', 'false'); $('#veil').hidden = true;
+    running = true; deadFor = 0; acc = 0; last = performance.now(); cv.focus({ preventScroll: true }); post('loaded', game.snapshot());
+    return true;
+  }
+  const askLoad = () => new Promise((ok) => {
+    if (parent === window) return ok(null);
+    const t = setTimeout(() => { loadWait = null; ok(null); }, 8000);
+    loadWait = (d) => { clearTimeout(t); ok(d); }; post('need-load');
+  });
+  S.snap = () => (game && running ? game.saveState() : null); S.resume = resume;
+  addEventListener('message', (e) => {
+    const d = e.data; if (!d) return;
+    if (d.type === 'dh-wake') return audioOn();
+    if (d.type !== 'dh-pe-cmd' || e.source !== parent) return;
+    if (d.cmd === 'hold') { hold(d.on); if (!d.on) tellSoon(); } else if (d.cmd === 'save') snap();
+    else if (d.cmd === 'load-data' && loadWait) { const f = loadWait; loadWait = null; f(d.data); }
+  });
   for (const b of document.querySelectorAll('#pad button[data-k]')) {
     const k = b.dataset.k, on = (v) => (e) => { e.preventDefault(); if (game && (running || !v)) { if (v) press(k); else release(k); } };
     b.addEventListener('pointerdown', on(true)); b.addEventListener('pointerup', on(false)); b.addEventListener('pointercancel', on(false)); b.addEventListener('pointerleave', on(false));
@@ -241,7 +280,11 @@ if(t)document.documentElement.classList.add('touch');addEventListener('touchstar
       game = window.DonghyunPe.makeGame(window.DonghyunPeCore.makeCore, data, atlas, { music: !!SET.music, onEvent, onIo: (a, v, t) => { if (apu) apu.io(a, v, t); } });
       game.setBrick(!SET.brick);
       S.ready = true; requestAnimationFrame(loop);
-      begin(SET.cont ? validSave(store.get(SAVE_KEY)) : null); soundSay();
+      if (SET.fromSave) {
+        const text = await askLoad(), bytes = typeof text === 'string' ? window.DonghyunPe.unpack(text) : null;
+        if (!resume(bytes)) { card('불러오지 못했다', '저장한 판을 읽지 못했다.', '다른 판에서 만든 파일일 수 있다. 코드로 정한 설정으로 새로 시작할 수 있다.', '새로 시작'); post('loadfail'); }
+      } else begin(SET.cont ? validSave(store.get(SAVE_KEY)) : null);
+      soundSay();
     } catch (e) { fail(e); }
   })();
 })();

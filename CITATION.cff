@@ -3,7 +3,7 @@ message: "If you use this software, please cite it using the metadata below."
 title: "Donghyunpe (동현페): a browser laboratory that runs the 1999 Game Boy Color version of Prince of Persia as a program translated to JavaScript with a redrawn heroine, with the starting level, remaining time, health, brick colour and music set through the esoteric language Donghyun-lang"
 type: software
 doi: "10.5281/zenodo.24430550"
-version: "0.31"
+version: "0.32"
 date-released: "2026-11-22"
 authors:
   - family-names: Kim
@@ -30,10 +30,12 @@ abstract: >-
   title screen, password entry and ending scenes are not included; the
   shadow and the mirror image keep the original hero graphics. Input is
   keyboard or gamepad, with on-screen buttons on phones; a desktop with a
-  keyboard is recommended. Version 0.31 renames the first heading of the
-  protocol tab to "code guide" and uses the Podong-i icon of Donghyun-lang
-  in the header and as the favicon; rules, engine and the save format are
-  unchanged from version 0.3.
+  keyboard is recommended. Version 0.32 turns the music on in the default and in all
+  six examples (sound effects play either way), adds save and load
+  buttons (three browser slots and a downloadable .dhsave file that
+  carries the 33,198-byte machine state) and fixes the rule that keeps
+  gold colours when the bricks are recoloured yellow, which did not apply
+  to some palettes of levels 4 and 11.
   Rights: the translated program in pe/core.js and the 228,169 bytes of
   level, background, sound and table data in pe/data.js come from the
   original game and belong to its rights holders. They are in the

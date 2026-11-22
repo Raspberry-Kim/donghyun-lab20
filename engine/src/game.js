@@ -248,10 +248,38 @@
     S.setBrick = (v) => { S.brick = v; c.setRecolor(v ? brick : null); };
     S.setMusic = (v) => { S.music = !!v; };
     S.dead = () => m[V.group] === 0x69;
+    /* 저장·복원: 게임 중일 때만 낸다. 되돌린 뒤에는 그림 맞추기 기억을 비운다(다음 화면부터 다시 맞춘다) */
+    S.saveState = () => (S.mode === 'play' ? c.save() : null);
+    S.loadState = (b) => { if (!c.load(b)) return false; atInit = false; S.mode = 'play'; hist.length = 0; last = null; S.info = null; return true; };
     S.G = G;
     boot();
     return S;
   }
-  const api = { SW, SH, OW, OH, makeGame, decodeGroups, makeBrick };
+  /* 저장 묶음을 글자로: 같은 값이 이어지는 곳을 줄이고(PackBits) base64로 적는다 */
+  function pack(b) {
+    const o = []; let i = 0; const n = b.length;
+    while (i < n) {
+      let r = 1; while (i + r < n && r < 128 && b[i + r] === b[i]) r++;
+      if (r >= 3) { o.push(257 - r, b[i]); i += r; continue; }
+      const s = i; i += r;
+      while (i < n && i - s < 128) { if (i + 2 < n && b[i] === b[i + 1] && b[i] === b[i + 2]) break; i++; }
+      o.push(i - s - 1); for (let k = s; k < i; k++) o.push(b[k]);
+    }
+    let t = ''; for (let k = 0; k < o.length; k += 0x8000) t += String.fromCharCode.apply(null, o.slice(k, k + 0x8000));
+    return btoa(t);
+  }
+  function unpack(text) {
+    let t; try { t = atob(String(text)); } catch (e) { return null; }
+    const o = []; let i = 0; const n = t.length;
+    while (i < n) {
+      const c = t.charCodeAt(i++);
+      if (c < 128) { if (i + c + 1 > n) return null; for (let k = 0; k <= c; k++) o.push(t.charCodeAt(i++)); }
+      else if (c > 128) { if (i >= n) return null; const v = t.charCodeAt(i++); for (let k = 257 - c; k > 0; k--) o.push(v); }
+      else return null;
+      if (o.length > 0x40000) return null;
+    }
+    return Uint8Array.from(o);
+  }
+  const api = { SW, SH, OW, OH, makeGame, decodeGroups, makeBrick, pack, unpack };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.DonghyunPe = api;
 })(typeof self !== 'undefined' ? self : this);
