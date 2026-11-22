@@ -31,6 +31,8 @@ check('옛 저장 묶음(v0.40 전)은 노랑을 컬러로, 본래 색을 본래
   assert.deepEqual(setOf({lab:'0.40',set:{l:4,t:45,h:3,b:0,m:1}}),{l:4,t:45,h:3,b:0,m:1});
   assert.deepEqual(setOf({lab:'0.40',set:{l:4,t:45,h:3,b:2,m:1}}),{l:4,t:45,h:3,b:2,m:1});
   assert.deepEqual(setOf({lab:'0.40',set:{l:4,t:45,h:3,b:3,m:1}}),{l:4,t:45,h:3,b:3,m:1});
+  assert.deepEqual(setOf({lab:'0.50',set:{l:4,t:45,h:3,b:3,m:0}}),{l:4,t:45,h:3,b:3,m:0});
+  assert.deepEqual(setOf({lab:'0.50',set:{l:4,t:45,h:3,b:1,m:1}}),{l:4,t:45,h:3,b:1,m:1});
   assert.deepEqual(setOf({lab:'',set:{l:4,t:45,h:3,b:1,m:1}}),{l:4,t:45,h:3,b:1,m:1});
   assert.deepEqual(setOf({lab:'0.40',set:{l:99,t:45,h:3,b:5,m:1}}),{l:1,t:45,h:3,b:0,m:1});});
 check('시리즈 띠는 22칸이고 지금 여기는 동현페',()=>{const s=fs.readFileSync(path.join(__dirname,'../src/series.html'),'utf8');assert.equal((s.match(/class="series-item/g)||[]).length,22);assert(/is-current" data-series="pe"/.test(s));});
