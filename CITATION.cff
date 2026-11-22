@@ -23,8 +23,8 @@ abstract: >-
   written. A program written in the esoteric programming language
   Donghyun-lang prints five integers that are read in order as the
   starting level (1 to 14), remaining time in minutes (1 to 60), health
-  units (1 to 9), colour mode (four-level greyscale, pastel colour or
-  the original colours) and music (off or on). The hero was replaced by 578 newly drawn frames of
+  units (1 to 9), colour mode (four-level greyscale, pastel colour,
+  the original colours or a pencil drawing) and music (off or on). The hero was replaced by 578 newly drawn frames of
   Amolang that follow the positions and poses of the original frames,
   with the original rule for hiding the character behind pillars. The
   title screen, password entry and ending scenes are not included; the
@@ -38,7 +38,11 @@ abstract: >-
   original colours. The examples were doubled to twelve, each of the six
   sorties in greyscale and in colour. Saves made with earlier versions
   are read with the old value mapped to the new one; the game rules, the
-  engine and the save format are unchanged.
+  engine and the save format are unchanged. After version 0.40 a fourth
+  colour mode, 3, was added: the greyscale screen is filtered into a
+  pencil drawing on paper at three times the size, with outlines where
+  the grey level changes, hatching that gets denser with darkness and
+  large dark areas left as blank paper; the examples became eighteen.
   Rights: the translated program in pe/core.js and the 228,169 bytes of
   level, background, sound and table data in pe/data.js come from the
   original game and belong to its rights holders. They are in the

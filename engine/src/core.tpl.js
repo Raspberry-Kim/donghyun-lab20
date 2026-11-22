@@ -48,7 +48,7 @@ function makeCore(rom, opts) {
   const bgpal = new Uint8Array(64), objpal = new Uint8Array(64); let bcps = 0, ocps = 0;
   const bgRGB = new Uint32Array(32), objRGB = new Uint32Array(32), bgRaw = new Uint32Array(32), objRaw = new Uint32Array(32);
   const SW = 160, SH = 144;
-  const fb = new Uint32Array(SW * SH), base = new Uint32Array(SW * SH), over = new Uint32Array(SW * SH), heroPx = new Uint32Array(SW * SH), fgm = new Uint8Array(SW * SH), actPx = new Uint32Array(SW * SH), heroIx = new Uint8Array(SW * SH), actIx = new Uint8Array(SW * SH), bgi = new Uint8Array(SW * SH);
+  const fb = new Uint32Array(SW * SH), base = new Uint32Array(SW * SH), over = new Uint32Array(SW * SH), heroPx = new Uint32Array(SW * SH), fgm = new Uint8Array(SW * SH), actPx = new Uint32Array(SW * SH), heroIx = new Uint8Array(SW * SH), actIx = new Uint8Array(SW * SH), bgi = new Uint8Array(SW * SH), bgp = new Uint32Array(SW * SH), spm = new Uint8Array(SW * SH);
   let recolor = opts.recolor || null, limit10 = !!opts.limit10;
   function rgb(lo, hi) { const c = lo | (hi << 8); return (0xFF000000 | (((c >> 10) & 31) << 19) | (((c >> 5) & 31) << 11) | ((c & 31) << 3)) >>> 0; }
   /* 색 바꾸기. recolor.pal(raw, out, k0, obj)이 팔레트 하나(네 색, k0부터)의 보이는 색을 정한다. obj가 1이면 스프라이트 팔레트다.
@@ -111,16 +111,16 @@ function makeCore(rom, opts) {
     for (let x = 0; x < SW; x++) {
       const b = lnBg[x], bc = b & 3, bp = master && bc && (b & 4) ? 1 : 0, bb = master && bc ? 1 : 0;
       fgm[o + x] = bp; bgi[o + x] = master ? b : 0;
-      let v = base[o + x], w = v;
-      const u = lnU[x]; if (u && !(bp || (bb && lnUb[x]))) { v = u; w = u; }
+      let v = base[o + x], w = v, sp = 0; bgp[o + x] = v;
+      const u = lnU[x]; if (u && !(bp || (bb && lnUb[x]))) { v = u; w = u; sp = 1; }
       base[o + x] = v;
       const a = lnA[x]; if (a && !(bp || (bb && lnAb[x]))) { actPx[o + x] = a; actIx[o + x] = lnAi[x]; } else { actPx[o + x] = 0; actIx[o + x] = 0; }
       const hh = lnH[x]; if (hh && !(bp || (bb && lnHb[x]))) { heroPx[o + x] = hh; heroIx[o + x] = lnHi[x]; w = hh; } else { heroPx[o + x] = 0; heroIx[o + x] = 0; }
-      const oo = lnO[x]; if (oo && !(bp || (bb && lnOb[x]))) { over[o + x] = oo; w = oo; } else over[o + x] = 0;
-      fb[o + x] = w;
+      const oo = lnO[x]; if (oo && !(bp || (bb && lnOb[x]))) { over[o + x] = oo; w = oo; sp = 1; } else over[o + x] = 0;
+      fb[o + x] = w; spm[o + x] = sp;
     }
   }
-  function blank() { fb.fill(0xFFFFFFFF); base.fill(0xFFFFFFFF); over.fill(0); heroPx.fill(0); fgm.fill(0); actPx.fill(0); heroIx.fill(0); actIx.fill(0); bgi.fill(0); }
+  function blank() { fb.fill(0xFFFFFFFF); base.fill(0xFFFFFFFF); over.fill(0); heroPx.fill(0); fgm.fill(0); actPx.fill(0); heroIx.fill(0); actIx.fill(0); bgi.fill(0); bgp.fill(0xFFFFFFFF); spm.fill(0); }
   /* 줄 시간표(보이는 시각 기준): 줄 시작 → +4 스프라이트 고르기(모드 2) → +84 그리기 시작(모드 3, 길이는 그 줄의 스프라이트에 따라) → 가로 귀선 → +456 다음 줄 */
   let ph = 0, firstLine = 0, m3len = 172, nLineObj = 0; const lineObjX = new Uint8Array(10);
   function collectObjs() {
@@ -273,7 +273,7 @@ function makeCore(rom, opts) {
   }
   const KEYBIT = { right: 1, left: 2, up: 4, down: 8, A: 16, B: 32, select: 64, start: 128 };
   return {
-    m, vram, fb, base, over, heroPx, actPx, fgm, heroIx, actIx, bgi, brk() { frameDone = 1; }, frame, runTo, step, hook, flowHook, rd, wr,
+    m, vram, fb, base, over, heroPx, actPx, fgm, heroIx, actIx, bgi, bgp, spm, brk() { frameDone = 1; }, frame, runTo, step, hook, flowHook, rd, wr,
     key(name, down) { const b = KEYBIT[name]; if (down) keys |= b; else keys &= ~b; },
     setKeys(v) { keys = v; }, setRecolor, save, load,
     get pc() { return pc; }, set pc(v) { pc = v; },

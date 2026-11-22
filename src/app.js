@@ -55,7 +55,7 @@ const FIELDS=[
   {key:'l',name:'시작 층',min:1,max:LAST,def:1},
   {key:'t',name:'남은 시간(분)',min:1,max:60,def:60},
   {key:'h',name:'체력 칸',min:1,max:9,def:3},
-  {key:'b',name:'색상',min:0,max:2,def:0},
+  {key:'b',name:'색상',min:0,max:3,def:0},
   {key:'m',name:'음악',min:0,max:1,def:1}
 ];
 const DEF=Object.fromEntries(FIELDS.map(f=>[f.key,f.def]));
@@ -69,7 +69,7 @@ function parseSortie(out){
     set[f.key]=v;}
   return {set};
 }
-const colorName=v=>['그레이스케일','컬러','본래 색'][v]||'그레이스케일', musicName=v=>v?'켬':'끔';
+const colorName=v=>['그레이스케일','컬러','본래 색','연필'][v]||'그레이스케일', musicName=v=>v?'켬':'끔';
 const SAVE_KEY='donghyunpe.save.v1';
 function readSave(){ try{ const s=JSON.parse(localStorage.getItem(SAVE_KEY)||'null'); return s&&s.level>=1&&s.level<=LAST&&s.min>=1&&s.min<=60&&s.hp>=1&&s.hp<=9?s:null; }catch(e){ return null; } }
 function setCard(s){
