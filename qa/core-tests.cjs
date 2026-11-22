@@ -4,21 +4,33 @@ const assert=require('assert'),fs=require('fs'),path=require('path');
 const D=require('../src/donghyun.js');const {examples}=require('../src/examples.js');
 // app.js는 브라우저용이므로 규약 부분(FIELDS·parseSortie)만 꺼내어 쓴다
 const app=fs.readFileSync(path.join(__dirname,'../src/app.js'),'utf8');
-const part=app.slice(app.indexOf('const LAST=14;'),app.indexOf('const brickName='));
+const part=app.slice(app.indexOf('const LAST=14;'),app.indexOf('const colorName='));
 const {FIELDS,parseSortie,DEF}=new Function(part+'\nreturn {FIELDS,parseSortie,DEF};')();
+// 옛 저장 묶음의 설정 읽기(setOf)도 꺼낸다
+const part2=app.slice(app.indexOf('const oldSave='),app.indexOf('/* 결과 알림'));
+const {setOf}=new Function('FIELDS',part2+'\nreturn {setOf};')(FIELDS);
 let n=0;const check=(name,f)=>{f();n++;console.log('ok',name);};
 const run=c=>D.run(c,{maxSteps:300000}).output;
-check('규약 다섯 칸과 기본값 1 60 3 0 1',()=>{assert.deepEqual(FIELDS.map(f=>f.key),['l','t','h','b','m']);assert.deepEqual(Object.values(DEF),[1,60,3,0,1]);});
+check('규약 다섯 칸과 기본값 1 60 3 0 1(색상의 기본은 0 그레이스케일)',()=>{assert.deepEqual(FIELDS.map(f=>f.key),['l','t','h','b','m']);assert.deepEqual(Object.values(DEF),[1,60,3,0,1]);});
 check('출력이 없으면 기본값으로 나선다',()=>{const p=parseSortie('');assert(!p.err);assert.deepEqual(p.set,DEF);assert(p.note);});
 check('다섯 개가 아니면 오류',()=>{assert(parseSortie('1 60 3 0').err);assert(parseSortie('1 60 3 0 0 0').err);assert(parseSortie('7').err);});
-check('범위: 시작 층 1–14, 남은 시간 1–60, 체력 칸 1–9, 벽돌색 0·1, 음악 0·1',()=>{
+check('범위: 시작 층 1–14, 남은 시간 1–60, 체력 칸 1–9, 색상 0–2, 음악 0·1',()=>{
   const ok=s=>!parseSortie(s).err;
-  assert(ok('1 1 1 0 0'));assert(ok('14 60 9 1 1'));
-  for(const bad of ['0 60 3 0 0','15 60 3 0 0','1 0 3 0 0','1 61 3 0 0','1 60 0 0 0','1 60 10 0 0','1 60 3 2 0','1 60 3 -1 0','1 60 3 0 2'])assert(!ok(bad),bad);});
+  assert(ok('1 1 1 0 0'));assert(ok('14 60 9 2 1'));assert(ok('1 60 3 1 0'));
+  for(const bad of ['0 60 3 0 0','15 60 3 0 0','1 0 3 0 0','1 61 3 0 0','1 60 0 0 0','1 60 10 0 0','1 60 3 3 0','1 60 3 -1 0','1 60 3 0 2'])assert(!ok(bad),bad);});
 check('정수가 아니면 오류',()=>{assert(parseSortie('1 60.5 3 0 0').err);});
-check('예제 여섯의 출력',()=>{const want={basic:[1,60,3,0,1],stroll:[1,60,9,0,1],palace:[4,45,3,1,1],music:[7,35,4,0,1],rush:[12,15,1,0,1],calc:[9,28,3,0,1]};
-  assert.equal(examples.length,6);
-  for(const e of examples){const p=parseSortie(run(e.code));assert(!p.err,e.id);assert.deepEqual(Object.values(p.set),want[e.id],e.id);}});
-check('예제 06: 남은 시간 = 64 − 층 × 4',()=>{const p=parseSortie(run(examples.find(e=>e.id==='calc').code));assert.equal(p.set.t,64-p.set.l*4);});
+check('예제 열둘의 출력: 여섯 가지 출전을 그레이스케일(0)과 컬러(1)로 짝지었다',()=>{const want={basic:[1,60,3,1],stroll:[1,60,9,1],palace:[4,45,3,1],music:[7,35,4,1],rush:[12,15,1,1],calc:[9,28,3,1]};
+  assert.equal(examples.length,12);assert.equal(new Set(examples.map(e=>e.id)).size,12);
+  examples.forEach((e,i)=>{const base=e.id.replace(/-color$/,''),c=i%2,w=want[base];assert(w,e.id);assert.equal(/-color$/.test(e.id)?1:0,c,e.id);
+    assert(e.title.startsWith(String(i+1).padStart(2,'0')+' · '),e.title);assert(e.title.includes(c?'컬러':'그레이스케일'),e.title);
+    const p=parseSortie(run(e.code));assert(!p.err,e.id);assert.deepEqual(Object.values(p.set),[w[0],w[1],w[2],c,w[3]],e.id);});});
+check('예제 11·12: 남은 시간 = 64 − 층 × 4',()=>{for(const id of ['calc','calc-color']){const p=parseSortie(run(examples.find(e=>e.id===id).code));assert.equal(p.set.t,64-p.set.l*4);}});
+check('옛 저장 묶음(v0.40 전)은 노랑을 컬러로, 본래 색을 본래 색으로 옮겨 읽는다',()=>{
+  assert.deepEqual(setOf({lab:'0.33',set:{l:4,t:45,h:3,b:0,m:1}}),{l:4,t:45,h:3,b:1,m:1});
+  assert.deepEqual(setOf({lab:'0.32',set:{l:4,t:45,h:3,b:1,m:0}}),{l:4,t:45,h:3,b:2,m:0});
+  assert.deepEqual(setOf({lab:'0.40',set:{l:4,t:45,h:3,b:0,m:1}}),{l:4,t:45,h:3,b:0,m:1});
+  assert.deepEqual(setOf({lab:'0.40',set:{l:4,t:45,h:3,b:2,m:1}}),{l:4,t:45,h:3,b:2,m:1});
+  assert.deepEqual(setOf({lab:'',set:{l:4,t:45,h:3,b:1,m:1}}),{l:4,t:45,h:3,b:1,m:1});
+  assert.deepEqual(setOf({lab:'0.40',set:{l:99,t:45,h:3,b:5,m:1}}),{l:1,t:45,h:3,b:0,m:1});});
 check('시리즈 띠는 22칸이고 지금 여기는 동현페',()=>{const s=fs.readFileSync(path.join(__dirname,'../src/series.html'),'utf8');assert.equal((s.match(/class="series-item/g)||[]).length,22);assert(/is-current" data-series="pe"/.test(s));});
 console.log(n+' passed');

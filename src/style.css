@@ -128,6 +128,8 @@ footer a{color:var(--muted);white-space:nowrap}
 .dh-head{display:flex;align-items:center;gap:8px;padding:12px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
 .dh-head select{width:0;flex:1 1 90px;min-width:0;max-width:100%;font-size:var(--text-sm);padding:.45em .6em;min-height:0}
 .dh-spacer{flex:1}
+/* 예제 이름이 길어 고르는 칸을 넓게 잡는다 */
+.dh-head select{flex-grow:8}
 .dh-btn{display:inline-flex;align-items:center;gap:.4em;min-height:0;font-size:var(--text-sm);font-weight:600;padding:.45em .9em;border-radius:6px;white-space:nowrap}
 .dh-btn svg{width:15px;height:15px}.dh-btn kbd{font-family:var(--mono);font-size:.75rem;opacity:.7}
 .dh-run{background:#f2b705;border-color:#f2b705;color:#26211c}.dh-run:hover:not(:disabled){background:#ffc61a}
@@ -193,6 +195,13 @@ html.pseudo-full-on,html.pseudo-full-on body{overflow:hidden;overscroll-behavior
 .exit-full:hover,.exit-full:focus-visible{opacity:1;background:rgba(20,18,16,.9)}
 .full-hint{position:absolute;left:50%;top:64px;transform:translateX(-50%);z-index:4;margin:0;max-width:calc(100% - 48px);padding:8px 14px;border-radius:8px;background:rgba(20,18,16,.85);color:#efe6d8;font:500 13px/1.5 var(--body);text-align:center;word-break:keep-all;pointer-events:none}.full-hint b{color:#f2b705}
 .game-poster{position:absolute;inset:0;display:grid;place-items:center;text-align:center;color:#e9dcc8;background:linear-gradient(rgba(14,11,6,.72),rgba(14,11,6,.9)),repeating-linear-gradient(0deg,#6e5c2a 0 22px,#3d3317 22px 24px),repeating-linear-gradient(90deg,#8a7436 0 46px,#3d3317 46px 48px);background-blend-mode:normal,multiply,normal}
+/* 시작 카드는 코드로 정한 색상을 따른다: 0 그레이스케일(기본) · 1 컬러 · 2 본래 색(위의 기본 모양) */
+.game-screen[data-color="0"]{background:#0a0b0d}
+.game-screen[data-color="0"] .game-poster{color:#f0f3f6;background:linear-gradient(rgba(10,11,13,.5),rgba(10,11,13,.82)),repeating-linear-gradient(0deg,#8a9098 0 22px,#2c2f34 22px 24px),repeating-linear-gradient(90deg,#c4c9cf 0 46px,#2c2f34 46px 48px);background-blend-mode:normal,multiply,normal}
+.game-screen[data-color="0"] .game-tag{color:#a8aeb5}.game-screen[data-color="0"] .game-poster p{color:#c6cbd1}.game-screen[data-color="0"] .game-poster b{color:#fff}
+.game-screen[data-color="1"]{background:#100e18}
+.game-screen[data-color="1"] .game-poster{color:#f3ecdd;background:linear-gradient(rgba(16,14,24,.68),rgba(16,14,24,.9)),repeating-linear-gradient(0deg,#a39468 0 22px,#3b3550 22px 24px),repeating-linear-gradient(90deg,#d9c88e 0 46px,#3b3550 46px 48px);background-blend-mode:normal,multiply,normal}
+.game-screen[data-color="1"] .game-tag{color:#e9b9a6}.game-screen[data-color="1"] .game-poster p{color:#d2cbdc}.game-screen[data-color="1"] .game-poster b{color:#f3d98b}
 .game-poster-in{max-width:440px;padding:24px;display:flex;flex-direction:column;align-items:center;gap:12px}
 .game-tag{font:500 11px var(--mono);letter-spacing:.12em;color:#d8a35a}
 .game-poster strong{font:400 clamp(1.6rem,3vw,2.4rem)/1.15 var(--display);color:#fff}

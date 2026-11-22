@@ -11,7 +11,7 @@
 
 ## 동현페가 만든 것 (MIT)
 - 아몰랑 그림 578장(`pe/atlas.js`, `engine/assets/`): 원작 주인공 그림의 자리와 자세에 맞춰 새로 그렸다.
-- 화면·소리 장치(`engine/src/core.tpl.js`의 틀, `engine/src/apu.js`), 그림 바꾸기·기둥 뒤 가림·벽돌색·저장(`engine/src/game.js`), 게임 화면(`pe/game.html`), 페이지와 규약·예제.
+- 화면·소리 장치(`engine/src/core.tpl.js`의 틀, `engine/src/apu.js`), 그림 바꾸기·기둥 뒤 가림·색상(그레이스케일·파스텔 컬러)·저장(`engine/src/game.js`), 게임 화면(`pe/game.html`), 페이지와 규약·예제.
 - 동현랭 실행기 `src/donghyun.js`: 동현랭(https://github.com/Raspberry-Kim/donghyun-lang)을 고치지 않고 썼다. MIT.
 
 ## 포동이
