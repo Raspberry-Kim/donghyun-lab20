@@ -3,7 +3,7 @@ message: "If you use this software, please cite it using the metadata below."
 title: "Donghyunpe (동현페): a browser laboratory that runs the 1999 Game Boy Color version of Prince of Persia as a program translated to JavaScript with a redrawn heroine, with the starting level, remaining time, health, colour mode and music set through the esoteric language Donghyun-lang"
 type: software
 doi: "10.5281/zenodo.24430550"
-version: "0.50"
+version: "0.60"
 date-released: "2026-11-22"
 authors:
   - family-names: Kim
@@ -43,7 +43,12 @@ abstract: >-
   pencil drawing on paper at three times the size, with outlines where
   the grey level changes, hatching that gets denser with darkness and
   large dark areas left as blank paper; the examples become eighteen,
-  each of the six sorties in greyscale, colour and pencil.
+  each of the six sorties in greyscale, colour and pencil. Version 0.60
+  redraws the pencil mode with rougher hand-drawn lines: faces are left
+  as paper, outlines are stroked two or three times with wobble and
+  varying pressure, and sprites are cut out of the background so that
+  they stay distinct; the cards shown before play use a dark ground with
+  a faint gradient instead of a brick grid.
   Rights: the translated program in pe/core.js and the 228,169 bytes of
   level, background, sound and table data in pe/data.js come from the
   original game and belong to its rights holders. They are in the
