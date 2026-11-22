@@ -20,5 +20,5 @@ check('예제 여섯의 출력',()=>{const want={basic:[1,60,3,0,1],stroll:[1,60
   assert.equal(examples.length,6);
   for(const e of examples){const p=parseSortie(run(e.code));assert(!p.err,e.id);assert.deepEqual(Object.values(p.set),want[e.id],e.id);}});
 check('예제 06: 남은 시간 = 64 − 층 × 4',()=>{const p=parseSortie(run(examples.find(e=>e.id==='calc').code));assert.equal(p.set.t,64-p.set.l*4);});
-check('시리즈 띠는 21칸이고 지금 여기는 동현페',()=>{const s=fs.readFileSync(path.join(__dirname,'../src/series.html'),'utf8');assert.equal((s.match(/class="series-item/g)||[]).length,21);assert(/is-current" data-series="pe"/.test(s));});
+check('시리즈 띠는 22칸이고 지금 여기는 동현페',()=>{const s=fs.readFileSync(path.join(__dirname,'../src/series.html'),'utf8');assert.equal((s.match(/class="series-item/g)||[]).length,22);assert(/is-current" data-series="pe"/.test(s));});
 console.log(n+' passed');
