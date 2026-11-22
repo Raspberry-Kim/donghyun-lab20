@@ -6,21 +6,20 @@
 <meta name="robots" content="noindex,nofollow">
 <title>동현페 게임 화면</title>
 <style>
-:root{--bg:#0b0a08;--panel:#211d16;--line:#3d3526;--ink:#efe6d0;--mute:#a59a80;--brick:#988547;--brick-d:#5c5029;--skirt:#7b8ac6;--top:#fcd8fc;--void:#000;--box:rgba(21,19,15,.92);--on:#14162a;--pad:#141210}
-/* 색상 0 그레이스케일(기본) · 1 컬러 · 2 본래 색 · 3 연필. 화면 둘레와 시작 카드도 게임 화면의 색에 맞춘다 */
-html.c0{--bg:#0a0b0d;--panel:#1c1e22;--line:#454a51;--ink:#f0f3f6;--mute:#a8aeb5;--brick:#5c6168;--brick-d:#2c2f34;--skirt:#a8aeb5;--top:#f0f3f6;--void:#0a0b0d;--box:rgba(10,11,13,.93);--on:#0a0b0d;--pad:#131417}
-html.c1{--bg:#100e18;--panel:#231f31;--line:#454061;--ink:#f3ecdd;--mute:#aaa3b8;--brick:#b8a36a;--brick-d:#6f6242;--skirt:#9aa6dc;--top:#f6d9ee;--void:#100e18;--box:rgba(16,14,24,.93);--on:#14162a;--pad:#181524}
-html.c3{--bg:#ece6d6;--panel:#f6f1e4;--line:#8f8b84;--ink:#2a2a30;--mute:#6b6862;--brick:#6f6d70;--brick-d:#d9d2c0;--skirt:#3e3e46;--top:#2a2a30;--void:#f6f1e4;--box:rgba(246,241,228,.95);--on:#f6f1e4;--pad:#ece6d6}
+:root{--g1:#3f3215;--g2:#1f180a;--bg:#0b0a08;--panel:#211d16;--line:#3d3526;--ink:#efe6d0;--mute:#a59a80;--brick:#988547;--brick-d:#5c5029;--skirt:#7b8ac6;--top:#fcd8fc;--void:#000;--box:rgba(21,19,15,.92);--on:#14162a;--pad:#141210}
+/* 색상 0 그레이스케일(기본) · 1 컬러 · 2 본래 색 · 3 연필. 화면 둘레와 카드도 게임 화면의 색에 맞춘다(--g1·--g2는 카드 아래에서 옅게 번지는 빛) */
+html.c0{--g1:#30343a;--g2:#17191c;--bg:#0a0b0d;--panel:#1c1e22;--line:#454a51;--ink:#f0f3f6;--mute:#a8aeb5;--brick:#5c6168;--brick-d:#2c2f34;--skirt:#a8aeb5;--top:#f0f3f6;--void:#0a0b0d;--box:rgba(10,11,13,.93);--on:#0a0b0d;--pad:#131417}
+html.c1{--g1:#3a3259;--g2:#1c182b;--bg:#100e18;--panel:#231f31;--line:#454061;--ink:#f3ecdd;--mute:#aaa3b8;--brick:#b8a36a;--brick-d:#6f6242;--skirt:#9aa6dc;--top:#f6d9ee;--void:#100e18;--box:rgba(16,14,24,.93);--on:#14162a;--pad:#181524}
+html.c3{--g1:#d6ccae;--g2:#e3dbc3;--bg:#eee6d1;--panel:#f8f3e5;--line:#8f8b84;--ink:#24242a;--mute:#666259;--brick:#6f6d70;--brick-d:#d6ceb9;--skirt:#3e3e46;--top:#24242a;--void:#eee6d1;--box:rgba(248,243,229,.95);--on:#f8f3e5;--pad:#e6dec8}
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:15px/1.55 "Pretendard","Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",system-ui,sans-serif;overflow:hidden}
 body{display:grid;grid-template:"s" minmax(0,1fr) "p" auto/minmax(0,1fr)}
 #stage{grid-area:s;position:relative;min-width:0;min-height:0;background:var(--void)}
 #screen{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges;display:block;object-fit:contain;outline:0}
 #card{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:5%;text-align:center;overflow:auto;
-  background:repeating-linear-gradient(0deg,transparent 0 30px,rgba(0,0,0,.28) 30px 32px),repeating-linear-gradient(90deg,var(--brick) 0 62px,var(--brick-d) 62px 64px)}
-/* 연필: 화면은 세 배로 그린 것을 부드럽게 줄이거나 늘려 보이고, 시작 카드는 종이에 연필로 그은 벽돌이다 */
+  background:radial-gradient(ellipse at 50% 120%,var(--g1) 0,var(--g2) 40%,var(--bg) 78%)}
+/* 연필: 화면은 세 배로 그린 것을 부드럽게 줄이거나 늘려 보이고, 카드는 종이색이다 */
 html.c3 #screen{image-rendering:auto}
-html.c3 #card{background:repeating-linear-gradient(0deg,transparent 0 30px,rgba(62,62,70,.5) 30px 31.5px),repeating-linear-gradient(90deg,#f6f1e4 0 62px,#a9a59c 62px 63.5px)}
 #card[hidden],#veil[hidden],#toast[hidden]{display:none}
 #card .box{background:var(--box);border:2px solid var(--line);border-radius:8px;padding:18px 20px;max-width:520px;width:100%}
 #card h2{margin:0 0 6px;font-size:22px;letter-spacing:-.02em}
@@ -34,7 +33,7 @@ button.primary{background:var(--skirt);color:var(--on);border-color:var(--skirt)
 button[hidden]{display:none}
 button[aria-pressed="true"]{background:var(--brick-d);border-color:var(--brick)}
 #veil{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(10,9,7,.62);font-size:18px;font-weight:700;letter-spacing:.02em;text-align:center;padding:0 12px;word-break:keep-all}
-html.c3 #veil{background:rgba(246,241,228,.8)}
+html.c3 #veil{background:rgba(238,230,209,.8)}
 #toast{position:absolute;left:50%;top:10px;transform:translateX(-50%);max-width:92%;background:var(--box);border:1px solid var(--brick);border-radius:99px;padding:4px 14px;font-size:13.5px;text-align:center;pointer-events:none;word-break:keep-all}
 #pad{grid-area:p;display:none;padding:10px 14px calc(10px + env(safe-area-inset-bottom));justify-content:space-between;align-items:center;gap:10px;user-select:none;-webkit-user-select:none;touch-action:none;background:var(--pad)}
 #pad .d{display:grid;grid-template-columns:repeat(3,50px);grid-template-rows:repeat(3,50px);gap:3px}
@@ -99,11 +98,13 @@ if(t)document.documentElement.classList.add('touch');addEventListener('touchstar
   const $ = (s) => document.querySelector(s);
   const FPS = 4194304 / 70224, SAVE_KEY = 'donghyunpe.save.v1', BEST_KEY = 'donghyunpe.best.v1', LAST_LEVEL = 14;
   const cv = $('#screen'), ctx = cv.getContext('2d'), img = ctx.createImageData(320, 288);
-  let penImg = null;
-  /* 화면에 올린다. 연필(색상 3)은 세 배(960×864) 화면에 바뀐 조각만 올린다 */
+  let penImg = null, penLeft = 0;
+  /* 화면에 올린다. 연필(색상 3)은 세 배(960×864) 화면에 바뀐 조각만 올린다.
+     방이 바뀌어 배경을 모두 다시 그릴 때는 한 화면에 PEN_MAX 조각씩 나누어 그린다(남은 수는 penLeft) */
+  const PEN_MAX = 48;
   function show() {
     if (game.color !== 3) { img.data.set(game.out); ctx.putImageData(img, 0, 0); return; }
-    const p = game.pencil(!penImg);
+    const p = game.pencil(!penImg, PEN_MAX); penLeft = p.left;
     if (!penImg) { cv.width = p.w; cv.height = p.h; penImg = new ImageData(p.out, p.w, p.h); ctx.putImageData(penImg, 0, 0); return; }
     if (p.n > 90) { ctx.putImageData(penImg, 0, 0); return; }
     for (let k = 0; k < p.n; k++) { const t = p.tiles[k]; ctx.putImageData(penImg, 0, 0, (t % p.cols) * p.tile, ((t / p.cols) | 0) * p.tile, p.tile, p.tile); }
@@ -207,13 +208,13 @@ if(t)document.documentElement.classList.add('touch');addEventListener('touchstar
   }
   function loop(t) {
     requestAnimationFrame(loop);
-    if (!running || paused || held) { last = t; return; }
+    if (!running || paused || held) { last = t; if (penLeft && game) show(); return; }
     acc += Math.min(100, t - last); last = t; let n = 0; const ms = 1000 / FPS;
     try { while (acc >= ms && n < 4 && running) { if (!step()) break; acc -= ms; n++; } } catch (e) { fail(e); return; }
     if (n) { show(); if (++shown % 30 === 0) status(); }
   }
   function status() { const s = game.snapshot(); if (s.level >= 1 && s.level <= LAST_LEVEL) post('stat', s); }
-  S.step = (n) => { for (let i = 0; i < (n || 1); i++) if (!step()) break; show(); status(); };
+  S.step = (n) => { for (let i = 0; i < (n || 1); i++) if (!step()) break; show(); while (penLeft) show(); status(); };
   S.begin = begin;
 
   /* ---- 입력 ---- */
