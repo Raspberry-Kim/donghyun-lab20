@@ -7,7 +7,7 @@
 
 바로 하기: https://raspberry-kim.github.io/donghyun-lab20/
 
-모든 판을 묶는 DOI는 [`10.5281/zenodo.24430550`](https://doi.org/10.5281/zenodo.24430550)이다. 이번 판은 [v0.33 릴리스](https://github.com/Raspberry-Kim/donghyun-lab20/releases/tag/v0.33)이다. 앞선 v0.32의 Zenodo 보관본은 [records/24431299](https://zenodo.org/records/24431299)(DOI `10.5281/zenodo.24431299`)이다. 보관본에는 `pe/core.js`와 `pe/data.js`가 들어 있지 않다.
+모든 판을 묶는 DOI는 [`10.5281/zenodo.24430550`](https://doi.org/10.5281/zenodo.24430550)이다. 이번 판은 [v0.33 릴리스](https://github.com/Raspberry-Kim/donghyun-lab20/releases/tag/v0.33)이며 Zenodo 보관본은 [records/24431569](https://zenodo.org/records/24431569)(DOI `10.5281/zenodo.24431569`)이다. 보관본에는 `pe/core.js`와 `pe/data.js`가 들어 있지 않다.
 
 ## 먼저 알아 둘 것
 
