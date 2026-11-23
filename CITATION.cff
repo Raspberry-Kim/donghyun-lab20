@@ -3,8 +3,8 @@ message: "If you use this software, please cite it using the metadata below."
 title: "Donghyunpe (동현페): a browser laboratory that runs the 1999 Game Boy Color version of Prince of Persia as a program translated to JavaScript with a redrawn heroine, with the starting level, remaining time, health, colour mode and music set through the esoteric language Donghyun-lang"
 type: software
 doi: "10.5281/zenodo.24430550"
-version: "0.60"
-date-released: "2026-11-22"
+version: "0.63"
+date-released: "2026-11-23"
 authors:
   - family-names: Kim
     given-names: Dong Hyun
@@ -23,7 +23,7 @@ abstract: >-
   written. A program written in the esoteric programming language
   Donghyun-lang prints five integers that are read in order as the
   starting level (1 to 14), remaining time in minutes (1 to 60), health
-  units (1 to 9), colour mode (four-level greyscale, pastel colour,
+  units (1 to 9), colour mode (greyscale, pastel colour,
   the original colours or a pencil drawing) and music (off or on). The hero was replaced by 578 newly drawn frames of
   Amolang that follow the positions and poses of the original frames,
   with the original rule for hiding the character behind pillars. The
@@ -48,7 +48,13 @@ abstract: >-
   as paper, outlines are stroked two or three times with wobble and
   varying pressure, and sprites are cut out of the background so that
   they stay distinct; the cards shown before play use a dark ground with
-  a faint gradient instead of a brick grid.
+  a faint gradient instead of a brick grid. Version 0.63 improves
+  legibility in greyscale: the side faces of the walls that the
+  character runs into are drawn in a fifth, deeper grey, and the hair and
+  trousers of Amolang are drawn in light grey so that they stand out
+  from the walls; the pencil mode stays available as value 3 but is no
+  longer among the examples, which become twelve, each of the six
+  sorties in greyscale and in colour.
   Rights: the translated program in pe/core.js and the 228,169 bytes of
   level, background, sound and table data in pe/data.js come from the
   original game and belong to its rights holders. They are in the

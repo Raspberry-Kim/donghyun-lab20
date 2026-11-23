@@ -1,5 +1,6 @@
 /* 동현페 예제. 동현랭이 출력한 정수 다섯 개가 차례로 시작 층 · 남은 시간(분) · 체력 칸 · 색상 · 음악이다.
-   여섯 가지 출전을 색상만 바꾸어 그레이스케일(0) · 컬러(1) · 연필(3)의 셋씩 묶었다. 번호는 출전마다 그레이스케일 · 컬러 · 연필 차례다. */
+   여섯 가지 출전을 색상만 바꾸어 그레이스케일(0) · 컬러(1)의 둘씩 묶었다. 번호는 출전마다 그레이스케일 · 컬러 차례다.
+   연필(3)은 v0.63부터 예제로 묶지 않는다. 넷째 값을 3으로 적으면 그대로 나온다. */
 function expression(n){
   if(n===0)return '도옹ㅠ';
   if(n<0)return 'ㅠ '+expression(-n);
@@ -10,8 +11,13 @@ function expression(n){
 const output=n=>'뿡뿡 '+expression(n)+'~뿡뿡뿡';
 const wrap=a=>['나는 동현이냐?',...a,'동현이구나'].join('\n');
 const LABELS=['시작 층','남은 시간(분)','체력 칸','색상(0 그레이스케일 · 1 컬러 · 2 본래 색 · 3 연필)','음악(0 끔 · 1 켬)'];
-/* 예제로 묶는 색상 값과 그 이름·id 꼬리 */
-const MODES=[{v:0,name:'그레이스케일',tail:''},{v:1,name:'컬러',tail:'-color'},{v:3,name:'연필',tail:'-pencil'}];
+/* 예제로 묶는 색상 값과 그 이름·id 꼬리·끝에 붙는 말 */
+const MODES=[
+ {v:0,name:'그레이스케일',tail:'',tone:'색상은 그레이스케일(0)이다. 흰 형광체 모니터에 띄운 회색으로 그리고, 벽 옆면은 더 짙게 칠한다.'},
+ {v:1,name:'컬러',tail:'-color',tone:'색상은 컬러(1)다. 버터빛 벽돌과 짙은 남보라 바탕의 파스텔로 그린다.'}
+];
+/* 예제로 묶지 않는 색상. MODES에 다시 넣으면 예제가 출전마다 하나씩 는다 */
+const SPARE=[{v:3,name:'연필',tail:'-pencil',tone:'색상은 연필(3)이다. 종이 위에 윤곽선을 긋고 어두운 곳은 빗금으로 채운다. 넓은 어둠은 종이로 남긴다.'}];
 const sortie=(label,v)=>wrap(['ㅋㅋ '+label,...v.flatMap((n,i)=>['ㅋㅋ '+LABELS[i]+' '+n,output(n)])]);
 const calc=c=>['나는 동현이냐?','ㅋㅋ 시작 층 9를 동현에 담는다','동현아 '+expression(9),'ㅋㅋ 시작 층','뿡뿡 동현~뿡뿡뿡','ㅋㅋ 남은 시간 = 64 − 층 × 4','동동현아 ㅠ 동현 '+expression(4),'동동동현아 '+expression(64),'ㅋㅋ 붙여 쓰면 더한다','뿡뿡 동동현동동동현~뿡뿡뿡','ㅋㅋ 체력 칸 3',output(3),'ㅋㅋ 색상 '+c+' · 음악 1',output(c),output(1),'동현이구나'].join('\n');
 /* 여섯 가지 출전. note는 색상 값마다 끝에 붙는 말(tone)과 함께 쓴다 */
@@ -23,9 +29,8 @@ const BASE=[
  {id:'rush',name:'15분 돌파',tag:'12층 · 체력 1칸',set:[12,15,1,1],note:'12층에서 15분, 체력 한 칸. 한 번만 다쳐도 쓰러진다. 쓰러지면 Enter로 그 층을 다시 시작하지만 시간은 돌아오지 않는다.'},
  {id:'calc',name:'계산해서 정하기',tag:'9층 · 28분',set:[9,28,3,1],note:'남은 시간을 직접 계산한다. 남은 시간 = 64 − 층 × 4. 9층이라면 28분이다. 변수 동현(층)에 −4를 곱해 동동현에, 64를 동동동현에 담고, 둘을 붙여 써서 더한다.'}
 ];
-const TONE=['색상은 그레이스케일(0)이다. 흰 형광체 모니터에 띄운 네 단계 회색으로 그린다.','색상은 컬러(1)다. 버터빛 벽돌과 짙은 남보라 바탕의 파스텔로 그린다.','색상은 연필(3)이다. 종이 위에 윤곽선을 긋고 어두운 곳은 빗금으로 채운다. 넓은 어둠은 종이로 남긴다.'];
 const examples=BASE.flatMap((b,k)=>MODES.map((md,j)=>{
   const c=md.v, v=[b.set[0],b.set[1],b.set[2],c,b.set[3]], no=String(k*MODES.length+j+1).padStart(2,'0');
-  return {id:b.id+md.tail,title:`${no} · ${b.name} · ${md.name} (${b.tag})`,note:b.note+' '+TONE[j],code:b.id==='calc'?calc(c):sortie(b.name+' · '+md.name,v)};
+  return {id:b.id+md.tail,title:`${no} · ${b.name} · ${md.name} (${b.tag})`,note:b.note+' '+md.tone,code:b.id==='calc'?calc(c):sortie(b.name+' · '+md.name,v)};
 }));
-if(typeof module!=='undefined')module.exports={examples,expression,LABELS,MODES};
+if(typeof module!=='undefined')module.exports={examples,expression,LABELS,MODES,SPARE};
