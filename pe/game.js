@@ -61,7 +61,8 @@
   }
 
   /* ---- 색상(넷 가운데 하나; 3 연필은 아래 '연필'에 따로 적었다) ----
-     0 그레이스케일: 흰 바탕 흑백 모니터에 CGA 네 색 화면을 띄웠을 때처럼 검정·어두운 회색·밝은 회색·흰색 네 단계로만 그린다.
+     0 그레이스케일: 흰 바탕 흑백 모니터에 CGA 네 색 화면을 띄웠을 때처럼 검정·어두운 회색·밝은 회색·흰색 네 단계로 그리고,
+       주인공이 좌우로 가다 부딪히는 벽 옆면에만 다섯째 색인 깊은 회색을 쓴다.
      1 컬러: 파스텔. 층마다 다른 주제색(벽돌)은 버터빛 노랑으로 모으고, 나머지 색은 색상을 지킨 채 채도를 낮추고 밝기를 올린다.
      2 본래 색: 원작 색표 그대로(색 바꾸기를 거치지 않는다).
      색은 0xAABBGGRR. 색표(팔레트) 단위로 바꾸므로 한 화면에 드는 품은 본래 색과 같다 */
@@ -81,6 +82,8 @@
   }
   /* 그레이스케일 네 단계: 흰 형광체는 살짝 푸른 흰색이다. 단계 경계는 밝기(0–1) */
   const GRAY = [abgr(10, 11, 13), abgr(92, 97, 104), abgr(168, 174, 181), abgr(240, 243, 246)], GRAY_T = [0.08, 0.21, 0.52];
+  /* 벽 옆면의 깊은 회색: 검정과 어두운 회색 사이. 그레이스케일(색상 0)에서만 쓴다 */
+  const DEEP = abgr(46, 49, 54);
   const grayLevel = (v) => { const l = lumOf(v); return l < GRAY_T[0] ? 0 : l < GRAY_T[1] ? 1 : l < GRAY_T[2] ? 2 : 3; };
   /* 파스텔: 검정은 짙은 남보라, 회색은 옅은 보랏빛 회색, 벽돌은 버터빛 노랑(색상 46°), 나머지는 채도 절반·밝기 올림 */
   const INK = abgr(16, 14, 24), BRICK_HUE = 46, STONE_HUE = 32;
@@ -104,7 +107,14 @@
       /* 팔레트 하나(k0부터 네 색)의 보이는 색. 벽돌 판정은 배경 팔레트(4번 = 횃불·체력·글자는 빼고)와 스프라이트 팔레트 6(궁전 층의 바닥 조각)에만 한다 */
       pal(raw, out, k0, obj) {
         const pi = k0 >> 2, br = obj ? pi === 6 : pi !== 4;
-        for (let k = k0; k < k0 + 4; k++) out[k] = mode === 0 ? GRAY[grayLevel(raw[k])] : pastelOf(raw[k], br && isBrick(raw[k]));
+        for (let k = k0; k < k0 + 4; k++) out[k] = mode === 1 ? pastelOf(raw[k], br && isBrick(raw[k])) : GRAY[grayLevel(raw[k])];
+        /* 그레이스케일(0): 벽 옆면을 깊은 회색으로 칠한다. 연필(3)은 네 단계 그대로 둔다.
+           지하 층(배경 팔레트 0의 첫 색이 회색이고 팔레트 2가 팔레트 1의 돌빛을 나눠 쓴다)의 벽 옆면은 팔레트 2의 둘째 색(팔레트 7의 첫 색도 같은 값)이다.
+           궁전 층(팔레트 2가 팔레트 0의 주제색을 나눠 쓴다)의 벽 옆면은 팔레트 2의 첫 색이고, 바닥 무늬와 기둥의 어두운 쪽도 이 색이다 */
+        if (mode === 0 && !obj) {
+          if (hueOf(raw[0]) < 0) { if (raw[8] === raw[5] && raw[10] === raw[6] && hueOf(raw[9]) >= 0) { if (pi === 2) out[9] = DEEP; else if (pi === 7 && raw[28] === raw[9]) out[28] = DEEP; } }
+          else if (pi === 2 && raw[8] === raw[0] && raw[10] === raw[2]) out[8] = DEEP;
+        }
       },
       /* 주제색(배경 팔레트 0의 0·2번 색과 팔레트 1의 네 색)의 색상을 읽는다. 바뀌었으면 true */
       theme(raw) {
@@ -116,14 +126,16 @@
     };
     return f;
   }
-  /* 아몰랑 그림(스무 색)의 그레이스케일 판: 색마다 단계를 정한다. 치마는 어두운 회색, 살은 밝은 회색, 윗옷은 흰색 */
-  const HERO_GRAY = { 0x7b8ac6: 1, 0x5967a3: 0 };
-  function grayAtlas(A32) {
+  /* 아몰랑 그림(스무 색)의 그레이스케일 판: 색마다 단계를 정한다.
+     그레이스케일(색상 0): 머리(1d1b26)와 바지(7b8ac6)는 밝은 회색, 머리의 윤기(47435a)는 흰색, 바지 주름(5967a3)과 윤곽선은 어두운 회색, 살과 윗옷은 흰색.
+     연필(색상 3)이 받아 쓰는 판(HERO_PEN)은 v0.60 그대로다: 바지는 어두운 회색, 바지 주름은 검정, 머리는 밝기대로 */
+  const HERO_GRAY = { 0x7b8ac6: 2, 0x5967a3: 1, 0x1d1b26: 2, 0x47435a: 3 }, HERO_PEN = { 0x7b8ac6: 1, 0x5967a3: 0 };
+  function grayAtlas(A32, HG) {
     const o = new Uint32Array(A32.length), memo = new Map();
     for (let i = 0; i < A32.length; i++) {
       const v = A32[i]; if (!(v >>> 24)) continue;
       let g = memo.get(v);
-      if (g === undefined) { const key = ((v & 255) << 16) | (v & 0xFF00) | ((v >> 16) & 255); g = GRAY[key in HERO_GRAY ? HERO_GRAY[key] : grayLevel(v)]; memo.set(v, g); }
+      if (g === undefined) { const key = ((v & 255) << 16) | (v & 0xFF00) | ((v >> 16) & 255); g = GRAY[key in HG ? HG[key] : grayLevel(v)]; memo.set(v, g); }
       o[i] = g;
     }
     return o;
@@ -583,7 +595,7 @@
   function makeGame(makeCore, data, atlas, opts) {
     opts = opts || {};
     const G = decodeGroups(data);
-    const A32C = new Uint32Array(atlas.rgba.buffer, atlas.rgba.byteOffset, atlas.rgba.byteLength >> 2), A32G = grayAtlas(A32C), AW = atlas.w;
+    const A32C = new Uint32Array(atlas.rgba.buffer, atlas.rgba.byteOffset, atlas.rgba.byteLength >> 2), A32G = grayAtlas(A32C, HERO_GRAY), A32P = grayAtlas(A32C, HERO_PEN), AW = atlas.w;
     let A32 = A32G;
     const out = new Uint8ClampedArray(OW * OH * 4), out32 = new Uint32Array(out.buffer);
     const stat = { frames: 0, hero: 0, ok: 0, miss: 0, hidden: 0, wrong: 0 };
@@ -740,11 +752,11 @@
     }
     S.core = c; S.frame = frame; S.start = start; S.boot = boot; S.snapshot = snapshot;
     S.key = (name, down) => c.key(name, down); S.setKeys = (v) => c.setKeys(v);
-    /* 색상: 0 그레이스케일 · 1 컬러(파스텔) · 2 본래 색 · 3 연필. 아몰랑 그림은 그레이스케일과 연필에서 네 단계 판을 쓴다.
-       연필은 그레이스케일로 그린 화면을 S.pencil()이 세 배의 연필 그림으로 옮긴다(S.out은 그레이스케일 그대로) */
+    /* 색상: 0 그레이스케일 · 1 컬러(파스텔) · 2 본래 색 · 3 연필. 아몰랑 그림은 그레이스케일과 연필에서 네 단계 판을 따로 쓴다.
+       연필은 네 단계로 그린 화면을 S.pencil()이 세 배의 연필 그림으로 옮긴다(S.out은 v0.60까지의 그레이스케일 화면: 벽 옆면과 머리·바지가 어두운 회색) */
     S.setColor = (v) => {
-      v = v === 1 || v === 2 || v === 3 ? v : 0; S.color = v; const gray = v === 0 || v === 3;
-      A32 = gray ? A32G : A32C; tone.setMode(gray ? 0 : v); c.setRecolor(v === 2 ? null : tone);
+      v = v === 1 || v === 2 || v === 3 ? v : 0; S.color = v;
+      A32 = v === 3 ? A32P : v === 0 ? A32G : A32C; tone.setMode(v); c.setRecolor(v === 2 ? null : tone);
       if (v === 3) { if (!pen) pen = makePencil(); penAll = true; sprHi.fill(0); }
     };
     /* 연필 화면: 지금의 S.out을 옮겨 { out, w, h, tile, cols, tiles, n, left }를 낸다. 바뀐 조각만 다시 그리고 그 번호를 tiles[0..n)에 적는다.
@@ -784,6 +796,6 @@
     }
     return Uint8Array.from(o);
   }
-  const api = { SW, SH, OW, OH, PW, PH, makeGame, makePencil, decodeGroups, makeTone, GRAY, INK, GOLD, PAPER, FILL, LEAD, pastelOf, grayLevel, pack, unpack };
+  const api = { SW, SH, OW, OH, PW, PH, makeGame, makePencil, decodeGroups, makeTone, grayAtlas, HERO_GRAY, HERO_PEN, GRAY, DEEP, INK, GOLD, PAPER, FILL, LEAD, pastelOf, grayLevel, pack, unpack };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.DonghyunPe = api;
 })(typeof self !== 'undefined' ? self : this);

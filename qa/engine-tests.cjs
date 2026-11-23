@@ -41,10 +41,29 @@ check('저장 묶음은 글자로 바꿨다 되돌려도 같고, 깨진 묶음�
 const hue=v=>{const r=v&255,g=(v>>8)&255,b=(v>>16)&255,mx=Math.max(r,g,b),mn=Math.min(r,g,b),d=mx-mn;if(d<24)return -1;return 60*(mx===r?((g-b)/d+6)%6:mx===g?(b-r)/d+2:(r-g)/d+4);};
 const at200=(lv,mode)=>{const {g}=make({});if(mode!==undefined)g.setColor(mode);g.start({level:lv,min:60,sec:0,hp:3});run(g,200,[0]);return g;};
 check('색상의 기본은 0 그레이스케일이고, 0·1·2·3 밖의 값은 0으로 본다',()=>{const {g}=make({});assert.equal(g.color,0);assert.equal(g.pencil(),null);g.setColor(1);assert.equal(g.color,1);g.setColor(2);assert.equal(g.color,2);g.setColor(3);assert.equal(g.color,3);g.setColor(7);assert.equal(g.color,0);g.setColor(true);assert.equal(g.color,0);});
-check('색상 0 그레이스케일: 1–14층의 색표와 화면이 네 단계만 쓴다',()=>{const G4=new Set(PE.GRAY);assert.equal(G4.size,4);const seen=new Set();
-  for(let lv=1;lv<=14;lv++){const g=at200(lv,0),c=g.core;for(let k=0;k<32;k++){assert(G4.has(c.bgRGB[k]),lv+'층 배경 색 '+k);assert(G4.has(c.objRGB[k]),lv+'층 스프라이트 색 '+k);}
-    const o=new Uint32Array(g.out.buffer,g.out.byteOffset,320*288);for(let i=0;i<o.length;i++){if(!G4.has(o[i]))assert.fail(lv+'층 화면 '+i+'번째 점 '+o[i].toString(16));seen.add(o[i]);}}
-  assert.equal(seen.size,4,'네 단계가 모두 쓰인다');});
+/* 지하 층은 벽 옆면이 셋째 배경 색표의 둘째 색(칸 9), 궁전 층은 첫 색(칸 8)이다 */
+const CAVE=new Set([1,2,3,7,8,9,12,13]),sideOf=lv=>CAVE.has(lv)?9:8;
+check('색상 0 그레이스케일: 1–14층의 색표와 화면이 네 단계와 벽 옆면의 깊은 회색만 쓴다',()=>{const G4=new Set(PE.GRAY);assert.equal(G4.size,4);assert(!G4.has(PE.DEEP));
+  const lum=v=>0.299*(v&255)+0.587*((v>>8)&255)+0.114*((v>>16)&255);assert(lum(PE.DEEP)>lum(PE.GRAY[0])+20&&lum(PE.DEEP)<lum(PE.GRAY[1])-30,'깊은 회색은 검정과 어두운 회색 사이');
+  const seen=new Set();
+  for(let lv=1;lv<=14;lv++){const g=at200(lv,0),c=g.core;
+    for(let k=0;k<32;k++){const side=k===sideOf(lv)||(CAVE.has(lv)&&k===28&&c.bgRaw[28]===c.bgRaw[9]);
+      if(side)assert.equal(c.bgRGB[k],PE.DEEP,lv+'층 벽 옆면 색 '+k);else assert(G4.has(c.bgRGB[k]),lv+'층 배경 색 '+k);
+      assert(G4.has(c.objRGB[k]),lv+'층 스프라이트 색 '+k);}
+    const o=new Uint32Array(g.out.buffer,g.out.byteOffset,320*288);let deep=0;for(let i=0;i<o.length;i++){if(o[i]===PE.DEEP)deep++;else if(!G4.has(o[i]))assert.fail(lv+'층 화면 '+i+'번째 점 '+o[i].toString(16));seen.add(o[i]);}
+    assert(deep>50,lv+'층 화면의 깊은 회색 점 '+deep);}
+  assert.equal(seen.size,5,'다섯 색이 모두 쓰인다');});
+check('색상 0 그레이스케일: 벽 옆면의 원작 색은 층마다 다르고, 같은 칸을 쓰는 것만 짙어진다(색표의 다른 칸은 v0.60과 같다)',()=>{const raws=new Set();
+  for(let lv=1;lv<=14;lv++){const c=at200(lv,0).core;raws.add(c.bgRaw[sideOf(lv)]);
+    for(let k=0;k<32;k++){if(c.bgRGB[k]===PE.DEEP)continue;assert.equal(c.bgRGB[k],PE.GRAY[PE.grayLevel(c.bgRaw[k])],lv+'층 배경 색 '+k);}
+    for(let k=0;k<32;k++)assert.equal(c.objRGB[k],PE.GRAY[PE.grayLevel(c.objRaw[k])],lv+'층 스프라이트 색 '+k);}
+  assert(raws.size>=6,'벽 옆면의 원작 색 '+raws.size+'가지');});
+check('색상 0 그레이스케일: 아몰랑의 머리와 바지는 밝은 회색(168), 머리의 윤기는 흰색, 바지 주름과 윤곽선은 어두운 회색이다',()=>{
+  const px=k=>(0xFF000000|((k&255)<<16)|(k&0xFF00)|(k>>16))>>>0,src=Uint32Array.from([0x7b8ac6,0x5967a3,0x1d1b26,0x47435a,0x2c2838,0xffffff,0].map(k=>k?px(k):0));
+  const a=PE.grayAtlas(src,PE.HERO_GRAY),b=PE.grayAtlas(src,PE.HERO_PEN),G=PE.GRAY;
+  assert.deepEqual(Array.from(a),[G[2],G[1],G[2],G[3],G[1],G[3],0]);assert.equal(G[2]&255,168);
+  assert.deepEqual(Array.from(b),[G[1],G[0],G[1],G[2],G[1],G[3],0],'연필이 받아 쓰는 판은 v0.60 그대로');
+  assert.notEqual(a[0],PE.DEEP);assert.notEqual(a[2],PE.DEEP);});
 check('색상 1 컬러: 금색(c0a800)은 벽돌로 칠하지 않고, 벽돌은 색상 46° 둘레로 모인다(1–14층)',()=>{const got=[];
   for(let lv=1;lv<=14;lv++){const g=at200(lv,1),c=g.core,t=PE.makeTone();t.theme(c.bgRaw);let gold=0,brick=0;
     for(let k=0;k<32;k++){const raw=c.bgRaw[k],pi=k>>2;if(raw===PE.GOLD){gold++;assert.equal(c.bgRGB[k],PE.pastelOf(raw,false),lv+'층 금색 '+k);}
@@ -57,7 +76,7 @@ check('색상 2 본래 색: 색표가 원작 값 그대로다(1–14층)',()=>{f
 check('색상을 바꾸어도 판의 진행과 저장 묶음은 같고, 게임 중에 바꾸면 화면이 곧 따른다',()=>{const gs=[0,1,2,3].map(m=>{const g=make({}).g;g.setColor(m);g.start({level:4,min:45,sec:0,hp:3});for(let f=0;f<600;f++){press(g,f);g.frame();}return g;});
   assert.deepEqual(gs[1].snapshot(),gs[0].snapshot());assert.deepEqual(gs[2].snapshot(),gs[0].snapshot());assert.deepEqual(gs[3].snapshot(),gs[0].snapshot());
   const st=gs.map(g=>Buffer.from(g.saveState()));assert.equal(Buffer.compare(st[0],st[1]),0);assert.equal(Buffer.compare(st[0],st[2]),0);assert.equal(Buffer.compare(st[0],st[3]),0);
-  assert.notEqual(fnv(gs[0]),fnv(gs[1]));assert.notEqual(fnv(gs[1]),fnv(gs[2]));assert.equal(fnv(gs[3]),fnv(gs[0]),'연필의 S.out은 그레이스케일 화면이다');
+  assert.notEqual(fnv(gs[0]),fnv(gs[1]));assert.notEqual(fnv(gs[1]),fnv(gs[2]));assert.notEqual(fnv(gs[3]),fnv(gs[0]),'연필의 S.out은 벽 옆면을 짙게 칠하지 않은 네 단계 화면이다');
   gs[2].setColor(0);press(gs[0],600);press(gs[2],600);gs[0].frame();gs[2].frame();assert.equal(fnv(gs[2]),fnv(gs[0]));});
 const penHash=p=>{let h=2166136261;const o=new Uint32Array(p.out.buffer,p.out.byteOffset,p.w*p.h);for(let i=0;i<o.length;i++){h^=o[i];h=Math.imul(h,16777619);}return h>>>0;};
 check('색상 3 연필: 화면은 960×864이고 흑연색과 오려 낸 종이색 사이의 색만 쓴다. 넓은 어둠은 종이로 남고, 스프라이트 둘레는 종이로 오려 낸다(1–14층)',()=>{let cutAll=0;
@@ -72,6 +91,17 @@ check('색상 3 연필: 화면은 960×864이고 흑연색과 오려 낸 종이�
     assert(ink>100,lv+'층 띠의 글자 '+ink);}
   assert(cutAll>1000,'오려 낸 점 '+cutAll);});
 const play=(lv)=>{const g=make({}).g;g.setColor(3);g.start({level:lv,min:60,sec:0,hp:3});return g;};
+check('색상 3 연필: 밑그림(S.out)은 네 단계만 쓰고 깊은 회색은 없다(1–14층)',()=>{const G4=new Set(PE.GRAY);
+  for(let lv=1;lv<=14;lv++){const g=at200(lv,3),c=g.core;for(let k=0;k<32;k++){assert.equal(c.bgRGB[k],PE.GRAY[PE.grayLevel(c.bgRaw[k])],lv+'층 배경 색 '+k);assert.equal(c.objRGB[k],PE.GRAY[PE.grayLevel(c.objRaw[k])],lv+'층 스프라이트 색 '+k);}
+    const o=new Uint32Array(g.out.buffer,g.out.byteOffset,320*288);for(let i=0;i<o.length;i++)if(!G4.has(o[i]))assert.fail(lv+'층 화면 '+i+'번째 점 '+o[i].toString(16));}});
+check('색상 3 연필: 밑그림과 연필 그림이 v0.60에서 적어 둔 값과 같다(아몰랑의 색을 깐 판, 1·4·7·12·14층 600화면째)',()=>{
+  const HC=[0x7b8ac6,0x5967a3,0x1d1b26,0x47435a,0x2c2838,0xffffff],at={rgba:new Uint8Array(W*H*4),w:W,h:H,frames:meta.frames};
+  for(let i=0;i<W*H;i++){const c=HC[(i%W+((i/W)|0))%6];at.rgba[i*4]=c>>16;at.rgba[i*4+1]=(c>>8)&255;at.rgba[i*4+2]=c&255;at.rgba[i*4+3]=255;}
+  const V060=[[1,594273960,1696869919],[4,3778517205,1307786403],[7,569476465,1772484272],[12,35799397,696848119],[14,1881847056,2145882385]];
+  for(const [lv,screen,pen] of V060){const g=PE.makeGame(makeCore,data,at,{});g.setColor(3);g.start({level:lv,min:40,sec:0,hp:3});for(let f=0;f<600;f++){press(g,f);g.frame();}
+    assert.equal(fnv(g),screen,lv+'층 밑그림');assert.equal(penHash(g.pencil(true)),pen,lv+'층 연필 그림');
+    const z=PE.makeGame(makeCore,data,at,{});z.setColor(0);z.start({level:lv,min:40,sec:0,hp:3});for(let f=0;f<600;f++){press(z,f);z.frame();}
+    assert.notEqual(fnv(z),screen,lv+'층: 그레이스케일 화면은 v0.60과 다르다');assert.deepEqual(z.snapshot(),g.snapshot());}});
 check('색상 3 연필: 바뀐 조각만 다시 그려도 모두 다시 그린 것과 같고, 같은 판은 같은 그림이 된다',()=>{
   for(const lv of [1,4,12]){const a=play(lv),b=play(lv);let few=0,some=0;
     for(let f=0;f<700;f++){press(a,f);press(b,f);a.frame();b.frame();const p=a.pencil();if(f>0&&p.n<60)few++;if(p.n>0)some++;
