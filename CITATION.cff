@@ -70,8 +70,7 @@ abstract: >-
   cannot be rebuilt from the repository either. Prince of Persia is a
   trademark of Ubisoft; this work is unaffiliated with Ubisoft, Jordan
   Mechner, Red Orb Entertainment, Ed Magnin and Associates or Nintendo.
-  Tests are automated runs; the game was not played to the end by a
-  person and no real device was checked.
+  Tests are automated runs (no real device).
 keywords:
   - platform game
   - Prince of Persia
