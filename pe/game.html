@@ -146,7 +146,11 @@ if(t)document.documentElement.classList.add('touch');addEventListener('touchstar
     apu = window.DonghyunPeApu.makeApu(actx ? actx.sampleRate : 48000); bufL = new Float32Array(4096); bufR = new Float32Array(4096);
   }
   function soundSay() { const now = !actx ? 'none' : actx.state === 'running' ? (muted ? 'mute' : 'on') : 'off'; if (now !== soundSaid) { soundSaid = now; post('sound', now); } }
-  function audioOn() { if (actx && actx.state === 'suspended') actx.resume().then(soundSay, () => {}); }
+  /* 소리 장치가 돌고 있지 않으면 다시 켠다. Safari는 탭을 바꾸거나 통화가 끝난 뒤 'interrupted'로 남는다 */
+  function audioOn() {
+    if (!actx || actx.state === 'running' || actx.state === 'closed') return;
+    try { const r = actx.resume(); if (r && r.then) r.then(soundSay, () => {}); } catch (e) {}
+  }
   function pushAudio() {
     if (!apu) return;
     const n = apu.render(game.core.cyc, bufL, bufR); if (!n) return;
@@ -235,7 +239,9 @@ if(t)document.documentElement.classList.add('touch');addEventListener('touchstar
     if (e.code === 'KeyP') pause(); else if (e.code === 'KeyM') mute();
   });
   addEventListener('keyup', (e) => { const k = KEY[e.code]; if (k && game) { release(k); if (running) e.preventDefault(); } });
-  addEventListener('pointerdown', audioOn, true);
+  addEventListener('pointerdown', audioOn, true); addEventListener('touchend', audioOn, true); addEventListener('click', audioOn, true);
+  /* 화면으로 돌아오면 한 번 더 켜 본다 */
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) audioOn(); }); addEventListener('pageshow', audioOn); addEventListener('focus', audioOn);
   addEventListener('blur', () => { if (game) for (const k of PADKEYS) { delete late[k]; game.key(k, false); } tellSoon(); });
   /* '키보드가 게임에 있는가'는 이 틀의 창을 보고 알린다. Firefox는 초점 사건이 올 때 아직 초점이 없다고 답하는 때가 있어, 조금 뒤와 누를 때 한 번 더 본다 */
   let hasKeys = null;

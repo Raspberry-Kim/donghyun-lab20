@@ -3,7 +3,7 @@ message: "If you use this software, please cite it using the metadata below."
 title: "Donghyunpe (동현페): a browser laboratory that runs the 1999 Game Boy Color version of Prince of Persia as a program translated to JavaScript with a redrawn heroine, with the starting level, remaining time, health, colour mode and music set through the esoteric language Donghyun-lang"
 type: software
 doi: "10.5281/zenodo.24430550"
-version: "0.63"
+version: "0.64"
 date-released: "2026-11-23"
 authors:
   - family-names: Kim
@@ -54,7 +54,9 @@ abstract: >-
   trousers of Amolang are drawn in light grey so that they stand out
   from the walls; the pencil mode stays available as value 3 but is no
   longer among the examples, which become twelve, each of the six
-  sorties in greyscale and in colour.
+  sorties in greyscale and in colour. Version 0.64 turns the sound
+  device back on whenever it is not running, including the interrupted
+  state that Safari leaves after a tab switch or a call.
   Rights: the translated program in pe/core.js and the 228,169 bytes of
   level, background, sound and table data in pe/data.js come from the
   original game and belong to its rights holders. They are in the
